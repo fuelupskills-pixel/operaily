@@ -134,7 +134,7 @@ const toolbox = [
   { type: "webhook", label: "Webhook" },
 ];
 
-export default function WorkflowCanvas() {
+export default function CanvasWorkflow() {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<AppEdge>([]);
   const [isExecuting, setIsExecuting] = useState(false);

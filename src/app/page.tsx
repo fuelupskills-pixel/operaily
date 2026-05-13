@@ -7,7 +7,7 @@ import TopBar from "@/components/layout/TopBar";
 import DashboardContent from "@/components/dashboard/DashboardContent";
 import HunterContent from "@/components/hunter/HunterContent";
 import LeadsContent from "@/components/leads/LeadsContent";
-import WorkflowCanvas from "@/components/workflows/WorkflowCanvas";
+import CanvasWorkflow from "@/components/workflows/CanvasWorkflow";
 import ConversationsContent from "@/components/conversations/ConversationsContent";
 import AnalyticsContent from "@/components/analytics/AnalyticsContent";
 import CampaignsContent from "@/components/campaigns/CampaignsContent";
@@ -26,7 +26,7 @@ function AppContent() {
       case "leads":
         return <LeadsContent />;
       case "workflows":
-        return <WorkflowCanvas />;
+        return <CanvasWorkflow />;
       case "conversations":
         return <ConversationsContent />;
       case "campaigns":
