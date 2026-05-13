@@ -13,6 +13,7 @@ import AnalyticsContent from "@/components/analytics/AnalyticsContent";
 import CampaignsContent from "@/components/campaigns/CampaignsContent";
 import CalendarContent from "@/components/calendar/CalendarContent";
 import SettingsContent from "@/components/settings/SettingsContent";
+import BillingContent from "@/components/billing/BillingContent";
 
 function AppContent() {
   const { isCollapsed, activeSection } = useSidebar();
@@ -37,6 +38,8 @@ function AppContent() {
         return <AnalyticsContent />;
       case "settings":
         return <SettingsContent />;
+      case "billing":
+        return <BillingContent />;
       default:
         return <DashboardContent />;
     }

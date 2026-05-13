@@ -18,7 +18,9 @@ import {
   RefreshCw,
   Loader2,
   Inbox,
+  FileSpreadsheet,
 } from "lucide-react";
+import LeadImport from "./LeadImport";
 
 interface LeadRecord {
   id: string;
@@ -70,6 +72,7 @@ export default function LeadsContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [sortBy, setSortBy] = useState("leadScore");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [showImport, setShowImport] = useState(false);
 
   const fetchLeads = useCallback(async () => {
     setIsLoading(true);
@@ -129,11 +132,27 @@ export default function LeadsContent() {
           >
             <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} /> Refresh
           </button>
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-surface border border-border-subtle hover:border-border transition-colors text-success"
+          >
+            <FileSpreadsheet className="w-3 h-3" /> Import Leads
+          </button>
           <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-semibold text-sm hover:opacity-90 transition-all">
             <Plus className="w-4 h-4" /> Add Lead
           </button>
         </div>
       </div>
+
+      {showImport && (
+        <LeadImport 
+          onClose={() => setShowImport(false)} 
+          onSuccess={(count) => {
+            fetchLeads();
+            // Optional: Show success notification
+          }} 
+        />
+      )}
 
       {/* Filters bar */}
       <div className="glass-card p-4 flex items-center gap-3 flex-wrap">

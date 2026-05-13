@@ -1,5 +1,6 @@
 // OMNI-SIGMA 360 — Lead CRUD Service
 // Handles all lead database operations
+import { getNotificationService } from "../notifications";
 
 export interface LeadInput {
   firstName: string;
@@ -73,6 +74,10 @@ export class LeadService {
     };
 
     memoryStore.push(record);
+    
+    // Trigger notification for admin
+    getNotificationService().notifyAdminOnNewLead(record).catch(console.error);
+
     return record;
   }
 
@@ -162,12 +167,19 @@ export class LeadService {
     const idx = memoryStore.findIndex((l) => l.id === id);
     if (idx === -1) return null;
 
+    const oldStatus = memoryStore[idx].status;
+    const newStatus = updates.status || oldStatus;
+
     memoryStore[idx] = {
       ...memoryStore[idx],
       ...updates,
       fullName: `${updates.firstName || memoryStore[idx].firstName} ${updates.lastName || memoryStore[idx].lastName}`.trim(),
       updatedAt: new Date().toISOString(),
     };
+
+    if (newStatus !== oldStatus) {
+      getNotificationService().notifyAdminOnStatusChange(memoryStore[idx], oldStatus, newStatus).catch(console.error);
+    }
 
     return memoryStore[idx];
   }

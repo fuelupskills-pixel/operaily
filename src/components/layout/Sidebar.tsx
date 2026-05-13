@@ -17,6 +17,7 @@ import {
   Zap,
   Globe,
   Bot,
+  CreditCard,
 } from "lucide-react";
 
 const navItems = [
@@ -28,6 +29,7 @@ const navItems = [
   { id: "campaigns", label: "Ad Campaigns", icon: Megaphone },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "billing", label: "Payments", icon: CreditCard },
 ];
 
 const bottomItems = [
