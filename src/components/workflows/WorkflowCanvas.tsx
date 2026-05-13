@@ -12,8 +12,8 @@ import {
   useNodesState,
   useEdgesState,
   type Connection,
-  type Node,
-  type Edge,
+  type Node as AppNode,
+  type Edge as AppEdge,
   Handle,
   Position,
   type NodeProps,
@@ -135,8 +135,8 @@ const toolbox = [
 ];
 
 export default function WorkflowCanvas() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<AppEdge>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [execution, setExecution] = useState<ExecutionResult | null>(null);
   const [showLogs, setShowLogs] = useState(false);
@@ -155,14 +155,14 @@ export default function WorkflowCanvas() {
           setWorkflowId(wf.id);
           setWorkflowName(wf.name);
 
-          const flowNodes: Node[] = wf.nodes.map((n: Record<string, unknown>) => ({
+          const flowNodes: AppNode[] = wf.nodes.map((n: Record<string, unknown>) => ({
             id: n.id as string,
             type: "custom",
             position: n.position as { x: number; y: number },
             data: { label: n.label, description: (n.config as Record<string, unknown>)?.description || n.type, nodeType: n.type },
           }));
 
-          const flowEdges: Edge[] = wf.edges.map((e: Record<string, unknown>) => ({
+          const flowEdges: AppEdge[] = wf.edges.map((e: Record<string, unknown>) => ({
             id: e.id as string,
             source: e.source as string,
             target: e.target as string,
@@ -171,8 +171,8 @@ export default function WorkflowCanvas() {
             style: { stroke: "#6366f1" },
           }));
 
-          setNodes(flowNodes as any);
-          setEdges(flowEdges as any);
+          setNodes(flowNodes as AppNode[]);
+          setEdges(flowEdges as AppEdge[]);
         }
       } catch (err) {
         console.error("Failed to load workflow:", err);
