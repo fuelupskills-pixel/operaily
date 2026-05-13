@@ -172,9 +172,9 @@ export default function CanvasWorkflow() {
           }));
 
           // @ts-ignore
-          setNodes(flowNodes as AppNode[]);
+          setNodes(flowNodes as any);
           // @ts-ignore
-          setEdges(flowEdges as AppEdge[]);
+          setEdges(flowEdges as any);
         }
       } catch (err) {
         console.error("Failed to load workflow:", err);
