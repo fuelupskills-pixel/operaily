@@ -200,7 +200,16 @@ export default function CanvasWorkflow() {
     // Reset node statuses
     // @ts-ignore
     setNodes((nds: any) => nds.map((n: any) => ({ ...n, data: { ...n.data, execStatus: undefined } })));
-...
+    try {
+      const res = await fetch(`/api/workflows/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workflowId }),
+      });
+      const data = await res.json();
+      if (data.success && data.execution) {
+        setExecution(data.execution);
+        const logMap = new Map(data.execution.logs.map((l: any) => [l.nodeId, l.status]));
         // @ts-ignore
         setNodes((nds: any) =>
           nds.map((n: any) => ({

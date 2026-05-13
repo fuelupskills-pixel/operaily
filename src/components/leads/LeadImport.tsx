@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Upload, FileSpreadsheet, X, Check, Loader2, AlertCircle, Facebook, Globe, Chrome } from "lucide-react";
+import { Upload, FileSpreadsheet, X, Check, Loader2, AlertCircle, Globe } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface LeadImportProps {
@@ -219,8 +219,8 @@ export default function LeadImport({ onClose, onSuccess }: LeadImportProps) {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { name: "Facebook Leads", icon: Facebook, color: "text-[#1877F2]", desc: "Connect Facebook Lead Ads", status: "Connected" },
-                  { name: "Google Ads", icon: Chrome, color: "text-[#34A853]", desc: "Import from Google Lead Forms", status: "Not Connected" },
+                  { name: "Facebook Leads", icon: Globe, color: "text-[#1877F2]", desc: "Connect Facebook Lead Ads", status: "Connected" },
+                  { name: "Google Ads", icon: Globe, color: "text-[#34A853]", desc: "Import from Google Lead Forms", status: "Not Connected" },
                   { name: "LinkedIn Ads", icon: Globe, color: "text-[#0077B5]", desc: "Sync LinkedIn Lead Gen Forms", status: "Not Connected" },
                   { name: "Webhooks", icon: Globe, color: "text-accent", desc: "Connect via Zapier or Make", status: "Setup" },
                 ].map((p, i) => (
