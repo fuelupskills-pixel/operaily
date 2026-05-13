@@ -133,8 +133,8 @@ const toolbox = [
 ];
 
 export default function WorkflowCanvas() {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [execution, setExecution] = useState<ExecutionResult | null>(null);
   const [showLogs, setShowLogs] = useState(false);
