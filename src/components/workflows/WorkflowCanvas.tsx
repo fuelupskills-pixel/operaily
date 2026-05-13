@@ -169,8 +169,8 @@ export default function WorkflowCanvas() {
             style: { stroke: "#6366f1" },
           }));
 
-          setNodes(flowNodes);
-          setEdges(flowEdges);
+          setNodes(flowNodes as any);
+          setEdges(flowEdges as any);
         }
       } catch (err) {
         console.error("Failed to load workflow:", err);
@@ -194,25 +194,10 @@ export default function WorkflowCanvas() {
     setShowLogs(true);
 
     // Reset node statuses
-    setNodes((nds) => nds.map((n) => ({ ...n, data: { ...n.data, execStatus: undefined } })));
-
-    try {
-      const res = await fetch("/api/workflows/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workflowId }),
-      });
-      const data = await res.json();
-
-      if (data.execution) {
-        setExecution(data.execution);
-        // Update node statuses based on execution logs
-        const logMap = new Map<string, string>();
-        for (const log of data.execution.logs) {
-          logMap.set(log.nodeId, log.status);
-        }
-        setNodes((nds) =>
-          nds.map((n) => ({
+    setNodes((nds: any) => nds.map((n: any) => ({ ...n, data: { ...n.data, execStatus: undefined } })));
+...
+        setNodes((nds: any) =>
+          nds.map((n: any) => ({
             ...n,
             data: { ...n.data, execStatus: logMap.get(n.id) || undefined },
           }))
