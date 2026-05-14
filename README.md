@@ -1,50 +1,84 @@
-# OMNI-SIGMA 360 CRM
+# OMNI-SIGMA 360 | Next-Gen AI CRM
 
-A next-generation, AI-driven B2B CRM designed for automated outbound outreach and intelligent lead generation.
+A comprehensive, AI-driven B2B CRM platform designed for automated outbound outreach, intelligent lead generation, and seamless multi-channel communication.
 
 ## Features
-- **Lead Hunter (AI-Powered)**: Multi-source lead extraction using Apollo.io, LinkedIn Sales Navigator, Web Crawling, and DuckDuckGo Deep Web Search.
-- **AI Enrichment**: Automatically scores leads and generates personalized outreach hooks based on industry, company size, and title seniority.
-- **Multi-Channel Outreach**: Integrated WhatsApp, Email, and Voice calling templates natively built into lead profiles and tables.
-- **Workflow Automation**: Visual drag-and-drop workflow builder for continuous sequence execution and multi-channel follow-ups.
-- **Multi-Tenant Settings**: Fully functional settings module with customizable Team Roles (RBAC), Social Media Links, Ad Account Connections (Meta/Google/TikTok), and Channel Configurations.
-- **Analytics & Dashboard**: Live tracking of meeting set rates, active agents, and top-converting campaigns.
+- **Lead Hunter (AI-Powered)**: Advanced multi-source lead extraction utilizing Apollo.io, LinkedIn Sales Navigator, Web Crawling, and DuckDuckGo Deep Web Search.
+- **AI Enrichment**: Automatic lead scoring and personalized outreach hooks generation based on industry, company size, and title seniority.
+- **Multi-Channel Outreach**: Natively integrated WhatsApp, Email, and Voice calling templates.
+- **Workflow Automation**: Visual drag-and-drop workflow builder (powered by @xyflow/react) for continuous sequence execution.
+- **Multi-Tenant Architecture**: Robust Role-Based Access Control (RBAC), customizable social links, and ad account integrations (Meta, Google, TikTok).
+- **Intelligent Analytics**: Live dashboard tracking meeting rates, agent performance, and campaign conversion data.
 
 ## Tech Stack
-- **Framework**: Next.js 14 (App Router)
-- **Styling**: Tailwind CSS + Glassmorphism UI
-- **Icons**: Lucide React
-- **State Management**: React Hooks (ready for Zustand/Redux)
-- **Backend/DB**: Ready for Supabase / PostgreSQL integration
+- **Framework**: Next.js 16.2 (App Router)
+- **Core Library**: React 19.2
+- **Backend/Database**: Supabase (PostgreSQL, Auth, Storage)
+- **State Management**: Zustand
+- **Styling**: Tailwind CSS 4 with Glassmorphism UI
+- **Workflow Engine**: @xyflow/react
+- **AI Integration**: Google Gemini AI, OpenAI
 
-## Getting Started
+---
 
-1. **Install Dependencies**
+## Installation Guide (Web Server / Production)
+
+Follow these steps to deploy OMNI-SIGMA 360 on a web server or Vercel.
+
+### 1. Prerequisites
+- Node.js 20+
+- npm or pnpm
+- Supabase Account
+- API Keys (Gemini, Apollo, etc.)
+
+### 2. Clone the Repository
+```bash
+git clone https://github.com/fuelupskills-pixel/omni-sigma-360.git
+cd omni-sigma-360
+```
+
+### 3. Install Dependencies
+```bash
+npm install
+```
+
+### 4. Environment Configuration
+Create a `.env.local` file in the root directory:
+```bash
+cp .env.example .env.local
+```
+Update `.env.local` with your credentials:
+- **Supabase**: URL and Anon/Service Role Keys.
+- **AI**: GEMINI_API_KEY.
+- **Outreach**: APOLLO_API_KEY, WHATSAPP_ACCESS_TOKEN, etc.
+
+### 5. Build for Production
+```bash
+npm run build
+```
+
+### 6. Deployment
+#### Vercel (Recommended)
+1. Push your code to GitHub.
+2. Import the repository into Vercel.
+3. Add your environment variables in the Vercel dashboard.
+4. Deploy!
+
+#### Self-Hosted (Linux Server)
+1. Ensure Node.js is installed.
+2. Run with PM2 or a similar process manager:
    ```bash
-   npm install
+   pm2 start npm --name "omni-sigma" -- start
    ```
+3. Use Nginx as a reverse proxy for port 3000.
 
-2. **Set Environment Variables**
-   Rename `.env.example` to `.env.local` and add your API keys:
-   ```env
-   OPENAI_API_KEY=your_openai_key
-   APOLLO_API_KEY=your_apollo_key
-   ```
+---
 
-3. **Run Development Server**
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000) with your browser.
+## Development
+To run the project locally:
+1. Follow steps 2-4.
+2. Run `npm run dev`.
+3. Open `http://localhost:3000`.
 
-## Deployment to GitHub & Vercel
-1. Initialize a Git repository and push to GitHub:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit - OMNI-SIGMA 360 Final"
-   git branch -M main
-   git remote add origin https://github.com/yourusername/omni-sigma-360.git
-   git push -u origin main
-   ```
-2. Connect the repository to **Vercel** or **Netlify** for automatic seamless deployments.
+## License
+MIT License
