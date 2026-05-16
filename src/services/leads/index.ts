@@ -52,7 +52,7 @@ export interface LeadFilters {
 }
 
 // In-memory store for demo mode (replaced with Supabase when configured)
-let memoryStore: LeadRecord[] = [];
+const memoryStore: LeadRecord[] = [];
 let idCounter = 1;
 
 export class LeadService {
@@ -139,8 +139,8 @@ export class LeadService {
     const sortBy = filters.sortBy || "leadScore";
     const sortOrder = filters.sortOrder || "desc";
     results.sort((a, b) => {
-      const aVal = (a as Record<string, unknown>)[sortBy];
-      const bVal = (b as Record<string, unknown>)[sortBy];
+      const aVal = (a as unknown as Record<string, unknown>)[sortBy];
+      const bVal = (b as unknown as Record<string, unknown>)[sortBy];
       if (typeof aVal === "number" && typeof bVal === "number") {
         return sortOrder === "desc" ? bVal - aVal : aVal - bVal;
       }

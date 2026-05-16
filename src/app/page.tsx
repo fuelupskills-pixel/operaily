@@ -5,6 +5,8 @@ import { SidebarProvider, useSidebar } from "@/components/providers/SidebarProvi
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
 import DashboardContent from "@/components/dashboard/DashboardContent";
+import WorkforceDashboard from "@/components/dashboard/WorkforceDashboard";
+import ApprovalCenter from "@/components/dashboard/ApprovalCenter";
 import HunterContent from "@/components/hunter/HunterContent";
 import LeadsContent from "@/components/leads/LeadsContent";
 import CanvasWorkflow from "@/components/workflows/CanvasWorkflow";
@@ -14,6 +16,7 @@ import CampaignsContent from "@/components/campaigns/CampaignsContent";
 import CalendarContent from "@/components/calendar/CalendarContent";
 import SettingsContent from "@/components/settings/SettingsContent";
 import BillingContent from "@/components/billing/BillingContent";
+import VideoContent from "@/components/video/VideoContent";
 
 function AppContent() {
   const { isCollapsed, activeSection } = useSidebar();
@@ -22,6 +25,10 @@ function AppContent() {
     switch (activeSection) {
       case "dashboard":
         return <DashboardContent />;
+      case "workforce":
+        return <WorkforceDashboard />;
+      case "approvals":
+        return <ApprovalCenter />;
       case "hunter":
         return <HunterContent />;
       case "leads":
@@ -40,6 +47,8 @@ function AppContent() {
         return <SettingsContent />;
       case "billing":
         return <BillingContent />;
+      case "video":
+        return <VideoContent />;
       default:
         return <DashboardContent />;
     }

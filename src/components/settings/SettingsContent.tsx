@@ -110,7 +110,7 @@ export default function SettingsContent() {
     twilioSid: "AC...hidden...ef",
     twilioToken: "auth...hidden...tok",
     vapiKey: "vapi_...hidden...key",
-    openaiKey: "sk-...hidden...abc",
+    geminiKey: "AIzaSy...hidden...xyz",
     apolloKey: "apo_...hidden...key",
   });
 
@@ -504,7 +504,7 @@ export default function SettingsContent() {
             "Email (Resend)": [["resendKey", "API Key"]],
             "SMS & Voice (Twilio)": [["twilioSid", "Account SID"], ["twilioToken", "Auth Token"]],
             "AI Voice (Vapi)": [["vapiKey", "API Key"]],
-            "AI / OpenAI": [["openaiKey", "API Key"]],
+            "AI / Google Gemini": [["geminiKey", "API Key"]],
             "Lead Hunter (Apollo)": [["apolloKey", "API Key"]],
           }).map(([group, keys]) => (
             <div key={group} className="glass-card p-5">

@@ -18,15 +18,20 @@ import {
   Globe,
   Bot,
   CreditCard,
+  CalendarCheck,
+  Video,
 } from "lucide-react";
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "workforce", label: "AI Workforce", icon: Bot, badge: "Team" },
+  { id: "approvals", label: "Approval Center", icon: CalendarCheck, badge: "QC" },
   { id: "hunter", label: "Lead Hunter", icon: Target, badge: "AI" },
   { id: "leads", label: "Leads", icon: Users },
   { id: "workflows", label: "Automations", icon: Workflow },
   { id: "conversations", label: "Conversations", icon: MessageSquare, badge: "3" },
   { id: "campaigns", label: "Ad Campaigns", icon: Megaphone },
+  { id: "video", label: "Video Studio", icon: Video, badge: "AI" },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "billing", label: "Payments", icon: CreditCard },

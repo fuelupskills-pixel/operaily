@@ -125,7 +125,7 @@ export class DeepSearchProvider {
       if (/wikipedia|facebook\.com|linkedin\.com|twitter\.com|youtube\.com|tiktok\.com/i.test(result.url)) continue;
 
       // Extract company name from title
-      let companyName = result.title
+      const companyName = result.title
         .replace(/\s*[-|–—·:]\s*.*/g, "") // Remove everything after separators
         .replace(/<[^>]*>/g, "")
         .replace(/&amp;/g, "&")

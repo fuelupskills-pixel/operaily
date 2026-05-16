@@ -1,16 +1,19 @@
 // OMNI-SIGMA 360 — AI Enrichment Service
-// Uses OpenAI for lead scoring, personalization hooks, and company enrichment
+// Uses Google Gemini for lead scoring, personalization hooks, and company enrichment
 // Falls back to heuristic scoring when API key not configured
 
+import { GoogleGenAI, Type } from '@google/genai';
 import type { RawLead, EnrichedLead } from "./types";
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export class EnrichmentService {
   private isConfigured: boolean;
+  private ai: GoogleGenAI | null;
 
   constructor() {
-    this.isConfigured = !!OPENAI_API_KEY;
+    this.isConfigured = !!GEMINI_API_KEY;
+    this.ai = this.isConfigured ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
   }
 
   async enrichBatch(
@@ -21,12 +24,12 @@ export class EnrichmentService {
       try {
         return await this.enrichWithAI(leads, context);
       } catch (error) {
-        console.error("[Enrichment] OpenAI error, falling back to heuristic:", error);
+        console.error("[Enrichment] Gemini error, falling back to heuristic:", error);
         return this.enrichHeuristic(leads, context);
       }
     }
 
-    console.log("[Enrichment] No OpenAI key, using heuristic scoring");
+    console.log("[Enrichment] No Gemini key, using heuristic scoring");
     return this.enrichHeuristic(leads, context);
   }
 
@@ -50,39 +53,34 @@ export class EnrichmentService {
         hasLinkedIn: !!l.linkedinUrl,
       }));
 
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: `You are a B2B lead scoring AI for ${context.industry} in ${context.country}. For each lead, provide:
+      const response = await this.ai!.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: JSON.stringify(leadsContext),
+        config: {
+          systemInstruction: `You are a B2B lead scoring AI for ${context.industry} in ${context.country}. For each lead, provide:
 1. score (0-100): Based on title seniority, company relevance, data completeness
 2. personalizedHook: A one-line personalized outreach hook
 3. companySize: Estimated company size (Small/Medium/Large/Enterprise)
 4. companyRevenue: Estimated annual revenue range
 Return JSON array matching input order.`,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                score: { type: Type.INTEGER },
+                personalizedHook: { type: Type.STRING },
+                companySize: { type: Type.STRING },
+                companyRevenue: { type: Type.STRING },
+              },
             },
-            {
-              role: "user",
-              content: JSON.stringify(leadsContext),
-            },
-          ],
-          response_format: { type: "json_object" },
+          },
           temperature: 0.3,
-        }),
+        },
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const text = response.text;
       let aiResults: Array<{
         score: number;
         personalizedHook: string;
@@ -91,7 +89,7 @@ Return JSON array matching input order.`,
       }>;
 
       try {
-        const parsed = JSON.parse(data.choices[0].message.content);
+        const parsed = JSON.parse(text);
         aiResults = parsed.leads || parsed.results || parsed;
       } catch {
         // If parsing fails, use heuristic for this batch
