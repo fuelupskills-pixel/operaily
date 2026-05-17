@@ -71,7 +71,7 @@ function AppContent() {
             <Zap className="w-6 h-6 text-primary animate-pulse" />
           </div>
           <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase animate-pulse">
-            OMNI Secure Gatekeeper Verifying Session...
+            OperAIly Secure Gatekeeper Verifying Session...
           </p>
         </div>
       </div>
@@ -92,7 +92,7 @@ function AppContent() {
               <Zap className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">OMNI-SIGMA <span className="gradient-text">360</span></h1>
+              <h1 className="text-xl font-bold tracking-tight">Oper<span className="gradient-text">AI</span>ly</h1>
               <p className="text-[10px] text-muted-foreground font-semibold tracking-widest uppercase mt-0.5">Secure AI Operations Hub</p>
             </div>
           </div>

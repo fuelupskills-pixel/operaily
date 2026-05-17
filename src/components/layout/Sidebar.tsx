@@ -61,8 +61,8 @@ export default function Sidebar() {
         </div>
         {!isCollapsed && (
           <div className="animate-fade-in">
-            <h1 className="text-sm font-bold tracking-tight gradient-text">OMNI-SIGMA</h1>
-            <p className="text-[10px] text-muted-foreground font-medium tracking-widest">360 CRM</p>
+            <h1 className="text-sm font-bold tracking-tight gradient-text">OperAIly</h1>
+            <p className="text-[10px] text-muted-foreground font-semibold tracking-wider">AI Operations CRM</p>
           </div>
         )}
       </div>
