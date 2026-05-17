@@ -6,6 +6,7 @@ import {
   Save, Plus, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff,
   Globe, Link2, ChevronRight, Crown, UserCheck, UserMinus,
   Megaphone, Palette, User, Building2, MapPin, Camera, Edit3,
+  Video, Award, Play, ShieldCheck, RefreshCw, LogOut,
 } from "lucide-react";
 
 /* ——— Types ——— */
@@ -54,7 +55,7 @@ const platformStyles: Record<string, { color: string; label: string }> = {
   tiktok: { color: "#FE2C55", label: "TikTok Ads" },
 };
 
-type SettingsTab = "profile" | "channels" | "team" | "ads" | "branding";
+type SettingsTab = "profile" | "channels" | "team" | "ads" | "branding" | "integrations";
 
 export default function SettingsContent() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
@@ -155,6 +156,7 @@ export default function SettingsContent() {
     { key: "profile", label: "Profile & Social", icon: User },
     { key: "channels", label: "Channels", icon: MessageSquare },
     { key: "team", label: "Team", icon: Users },
+    { key: "integrations", label: "Integrations Center", icon: Globe },
     { key: "ads", label: "Ad Accounts", icon: Megaphone },
     { key: "branding", label: "API Keys", icon: Key },
   ];
@@ -531,6 +533,126 @@ export default function SettingsContent() {
           ))}
         </div>
       )}
+
+      {/* ─── INTEGRATIONS TAB ─── */}
+      {activeTab === "integrations" && (
+        <div className="space-y-4 animate-fade-in">
+          <div>
+            <h3 className="text-sm font-semibold mb-1 flex items-center gap-2"><Globe className="w-4 h-4 text-primary" /> OAuth Integrations & Authorization Center</h3>
+            <p className="text-[10px] text-muted-foreground mb-4">Connect and authorize third-party platforms separately. Revoke access individually at any time.</p>
+          </div>
+
+          <IntegrationsDeck />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IntegrationsDeck() {
+  const [activeConnections, setActiveConnections] = useState<Record<string, boolean>>({});
+  const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/integrations?org_id=default_org")
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && Array.isArray(res.data)) {
+          const activeMap: Record<string, boolean> = {};
+          res.data.forEach((item: any) => {
+            if (item.is_active) {
+              activeMap[item.provider] = true;
+            }
+          });
+          setActiveConnections(activeMap);
+        }
+      })
+      .catch(err => console.error("Failed to load integrations:", err));
+  }, []);
+
+  const handleToggle = async (id: string, provider: string) => {
+    setLoadingProvider(id);
+    try {
+      if (activeConnections[provider]) {
+        // Dynamic Provider OAuth Revocation Route
+        const response = await fetch(`/api/auth/revoke/${provider}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ org_id: "default_org", account_id: `act_${provider}_callback` })
+        });
+        const resData = await response.json();
+        if (resData.success) {
+          setActiveConnections(prev => ({ ...prev, [provider]: false }));
+        }
+      } else {
+        // Dynamic Provider OAuth Init Routes
+        window.location.href = `/api/auth/${provider}?org_id=default_org`;
+      }
+    } catch (err) {
+      console.error("Operation failed:", err);
+    } finally {
+      setLoadingProvider(null);
+    }
+  };
+
+  const integrations = [
+    { id: "youtube", label: "YouTube Studio", desc: "AI script generation, video upload, and channel insights", provider: "google", icon: Video, color: "text-red-500" },
+    { id: "facebook", label: "Facebook Pages", desc: "Outbound campaign updates, analytics & comment moderation", provider: "facebook", icon: Globe, color: "text-blue-500" },
+    { id: "instagram", label: "Instagram Business", desc: "Automated media publishing, reels schedule, and audience stats", provider: "facebook", icon: Camera, color: "text-pink-500" },
+    { id: "linkedin", label: "LinkedIn Share", desc: "AI B2B article posting and professional networking reach", provider: "linkedin", icon: Users, color: "text-sky-600" },
+    { id: "whatsapp", label: "WhatsApp Business API", desc: "Outbound templates, instant AI messaging & lead scoring", provider: "whatsapp", icon: MessageSquare, color: "text-emerald-500" },
+    { id: "telegram", label: "Telegram Channels", desc: "Outbound operations broadcast and chatbot notifications", provider: "telegram", icon: Send, color: "text-info" },
+    { id: "google_ads", label: "Google Ads", desc: "Modify ad spend budgets, demographic targets, and conversion stats", provider: "google", icon: Target, color: "text-blue-400" },
+    { id: "meta_ads", label: "Meta Ads Manager", desc: "Create ad campaigns, set daily target splits, and track leads CTR", provider: "facebook", icon: Award, color: "text-indigo-400" },
+    { id: "tiktok_ads", label: "TikTok Ads Manager", desc: "Query campaign performance, audience demographics, and metrics", provider: "tiktok", icon: Play, color: "text-rose-400" }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {integrations.map((item) => {
+        const Icon = item.icon;
+        const isConnected = activeConnections[item.provider];
+        const isLoading = loadingProvider === item.id;
+        return (
+          <div key={item.id} className={`glass-card p-5 border transition-all duration-300 relative overflow-hidden flex gap-4 ${isConnected ? 'border-primary/20 bg-primary/5 shadow-md shadow-primary/5' : 'hover:border-border-hover'}`}>
+            <div className={`w-12 h-12 rounded-2xl bg-surface border border-border flex items-center justify-center ${item.color} shrink-0`}>
+              <Icon className="w-6 h-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-bold text-sm text-foreground">{item.label}</h3>
+                <div className="flex items-center gap-1.5">
+                  {isConnected && (
+                    <span className="text-[9px] font-bold bg-success/15 text-success px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-success animate-pulse" /> Connected
+                    </span>
+                  )}
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
+              <div className="mt-4 flex justify-end">
+                <button 
+                  disabled={isLoading}
+                  onClick={() => handleToggle(item.id, item.provider)}
+                  className={`px-4 py-2 text-[10px] font-bold rounded-lg border transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer ${isConnected ? 'border-danger/20 bg-danger/5 text-danger hover:bg-danger/10' : 'border-primary/20 bg-primary/10 text-primary hover:bg-primary-hover hover:text-white'}`}
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : isConnected ? (
+                    <span>Revoke Access</span>
+                  ) : (
+                    <span>Connect OAuth</span>
+                  )}
+                </button>
+              </div>
+            </div>
+            {isConnected && <div className="absolute -right-10 -bottom-10 w-24 h-24 rounded-full bg-primary/10 blur-xl pointer-events-none" />}
+          </div>
+        );
+      })}
     </div>
   );
 }
