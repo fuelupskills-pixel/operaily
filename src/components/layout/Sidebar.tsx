@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useSidebar } from "@/components/providers/SidebarProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
 import {
   LayoutDashboard,
   Target,
@@ -20,6 +21,8 @@ import {
   CreditCard,
   CalendarCheck,
   Video,
+  ShieldAlert,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -43,6 +46,7 @@ const bottomItems = [
 
 export default function Sidebar() {
   const { isCollapsed, toggle, activeSection, setActiveSection } = useSidebar();
+  const { logoutAndRevoke } = useAuth();
 
   return (
     <aside
@@ -136,6 +140,16 @@ export default function Sidebar() {
             </button>
           );
         })}
+
+        {/* Revoke Session Button */}
+        <button
+          onClick={logoutAndRevoke}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-danger hover:bg-danger/10 transition-all duration-200 cursor-pointer group"
+          title={isCollapsed ? "Revoke Access" : undefined}
+        >
+          <LogOut className="w-[18px] h-[18px] shrink-0 text-danger group-hover:translate-x-0.5 transition-transform" />
+          {!isCollapsed && <span className="animate-fade-in text-danger font-semibold">Revoke Access</span>}
+        </button>
 
         {/* Collapse toggle */}
         <button
