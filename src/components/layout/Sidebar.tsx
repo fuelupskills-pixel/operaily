@@ -32,6 +32,7 @@ const navItems = [
   { id: "hunter", label: "Lead Hunter", icon: Target, badge: "AI" },
   { id: "leads", label: "Leads", icon: Users },
   { id: "workflows", label: "Automations", icon: Workflow },
+  { id: "agency", label: "AI Agency", icon: Globe, badge: "PRO" },
   { id: "conversations", label: "Conversations", icon: MessageSquare, badge: "3" },
   { id: "campaigns", label: "Ad Campaigns", icon: Megaphone },
   { id: "video", label: "Video Studio", icon: Video, badge: "AI" },

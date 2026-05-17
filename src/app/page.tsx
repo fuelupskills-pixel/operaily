@@ -18,6 +18,7 @@ import CalendarContent from "@/components/calendar/CalendarContent";
 import SettingsContent from "@/components/settings/SettingsContent";
 import BillingContent from "@/components/billing/BillingContent";
 import VideoContent from "@/components/video/VideoContent";
+import AgencyContent from "@/components/agency/AgencyContent";
 import { Zap, ShieldAlert, Key } from "lucide-react";
 
 function AppContent() {
@@ -52,6 +53,8 @@ function AppContent() {
         return <BillingContent />;
       case "video":
         return <VideoContent />;
+      case "agency":
+        return <AgencyContent />;
       default:
         return <DashboardContent />;
     }
