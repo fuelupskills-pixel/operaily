@@ -6,7 +6,7 @@ import {
   Save, Plus, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff,
   Globe, Link2, ChevronRight, Crown, UserCheck, UserMinus,
   Megaphone, Palette, User, Building2, MapPin, Camera, Edit3,
-  Video, Award, Play, ShieldCheck, RefreshCw, LogOut,
+  Video, Award, Play, ShieldCheck, RefreshCw, LogOut, Send,
 } from "lucide-react";
 
 /* ——— Types ——— */
