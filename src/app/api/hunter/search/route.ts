@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       sourceBreakdown: {
         apollo: results.filter((r) => r.source === "apollo").length,
         linkedin: results.filter((r) => r.source === "linkedin").length,
-        web: results.filter((r) => r.source === "web_scraper").length,
+        web: results.filter((r) => ["web_scraper", "indiamart", "justdial", "tradeindia", "alibaba", "yellow_pages"].includes(r.source)).length,
         deep: results.filter((r) => r.source === "deep_search").length,
       },
       averageScore: results.length > 0

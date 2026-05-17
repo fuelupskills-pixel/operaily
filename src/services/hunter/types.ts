@@ -31,7 +31,7 @@ export interface RawLead {
   linkedinUrl: string | null;
   twitterHandle: string | null;
   facebookUrl: string | null;
-  source: "apollo" | "linkedin" | "web_scraper" | "deep_search";
+  source: "apollo" | "linkedin" | "web_scraper" | "deep_search" | "indiamart" | "justdial" | "tradeindia" | "alibaba" | "yellow_pages";
   sourceId: string | null;
   rawData: Record<string, unknown>;
 }

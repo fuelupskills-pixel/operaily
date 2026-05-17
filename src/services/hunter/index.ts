@@ -5,6 +5,7 @@
 import { ApolloProvider } from "./providers/apollo";
 import { LinkedInProvider } from "./providers/linkedin";
 import { WebScraperProvider } from "./providers/web-scraper";
+import { B2BDirectoriesProvider } from "./providers/b2b-directories";
 import { DeepSearchProvider } from "./providers/deep-search";
 import { EnrichmentService } from "./enrichment";
 import { deduplicateLeads } from "./dedup";
@@ -14,6 +15,7 @@ export class HunterService {
   private apollo: ApolloProvider;
   private linkedin: LinkedInProvider;
   private webScraper: WebScraperProvider;
+  private b2bDirectories: B2BDirectoriesProvider;
   private deepSearch: DeepSearchProvider;
   private enrichment: EnrichmentService;
 
@@ -21,6 +23,7 @@ export class HunterService {
     this.apollo = new ApolloProvider();
     this.linkedin = new LinkedInProvider();
     this.webScraper = new WebScraperProvider();
+    this.b2bDirectories = new B2BDirectoriesProvider();
     this.deepSearch = new DeepSearchProvider();
     this.enrichment = new EnrichmentService();
   }
@@ -42,6 +45,9 @@ export class HunterService {
     onProgress?.({ phase: "searching", source: "web", message: "Crawling web directories & Google Maps...", percent: 40 });
     const webResults = await this.webScraper.search({ industry, country, limit });
 
+    onProgress?.({ phase: "searching", source: "web", message: "Syncing catalogs from IndiaMART, Justdial, TradeIndia & Alibaba...", percent: 45 });
+    const b2bResults = await this.b2bDirectories.search({ industry, country, limit });
+
     // Phase 1.5: Deep Search — actual internet search
     let deepResults: RawLead[] = [];
     if (isDeepSearch) {
@@ -51,7 +57,7 @@ export class HunterService {
     }
 
     // Phase 2: Merge all raw leads
-    const allRaw: RawLead[] = [...apolloResults, ...linkedinResults, ...webResults, ...deepResults];
+    const allRaw: RawLead[] = [...apolloResults, ...linkedinResults, ...webResults, ...b2bResults, ...deepResults];
     onProgress?.({ phase: "deduplicating", source: "system", message: `Deduplicating ${allRaw.length} records...`, percent: 60 });
 
     // Phase 3: Deduplicate

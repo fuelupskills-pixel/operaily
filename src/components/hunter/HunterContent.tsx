@@ -75,7 +75,8 @@ const popularSearches = [
 const searchPhases = [
   { message: "Querying Apollo.io API...", icon: "🔍" },
   { message: "Scanning LinkedIn Sales Navigator...", icon: "💼" },
-  { message: "Crawling web directories...", icon: "🌐" },
+  { message: "Crawling web directories & Yellow Pages...", icon: "🌐" },
+  { message: "Extracting catalogs from IndiaMART, Justdial, TradeIndia & Alibaba...", icon: "📦" },
   { message: "Deduplicating records...", icon: "🔄" },
   { message: "AI enriching & scoring leads...", icon: "🤖" },
   { message: "Finalizing results...", icon: "✨" },
@@ -84,7 +85,8 @@ const searchPhases = [
 const deepSearchPhases = [
   { message: "Querying Apollo.io API...", icon: "🔍" },
   { message: "Scanning LinkedIn Sales Navigator...", icon: "💼" },
-  { message: "Crawling web directories...", icon: "🌐" },
+  { message: "Crawling web directories & Yellow Pages...", icon: "🌐" },
+  { message: "Extracting catalogs from IndiaMART, Justdial, TradeIndia & Alibaba...", icon: "📦" },
   { message: "🌐 Deep searching internet for real companies...", icon: "🕵️" },
   { message: "Extracting contacts from search results...", icon: "📧" },
   { message: "Deduplicating records...", icon: "🔄" },
@@ -479,8 +481,21 @@ export default function HunterContent() {
                       <span className={`badge ${
                         lead.source === "apollo" ? "bg-primary/15 text-primary" :
                         lead.source === "linkedin" ? "bg-info/15 text-info" :
+                        lead.source === "indiamart" ? "bg-emerald-500/15 text-emerald-500 font-semibold" :
+                        lead.source === "tradeindia" ? "bg-orange-500/15 text-orange-500 font-semibold" :
+                        lead.source === "justdial" ? "bg-blue-500/15 text-blue-500 font-semibold" :
+                        lead.source === "alibaba" ? "bg-amber-600/15 text-amber-600 font-semibold" :
+                        lead.source === "yellow_pages" ? "bg-cyan-500/15 text-cyan-500" :
                         "bg-warning/15 text-warning"
-                      }`}>{lead.source === "web_scraper" ? "Web" : lead.source}</span>
+                      }`}>{
+                        lead.source === "web_scraper" ? "Web Scraper" :
+                        lead.source === "indiamart" ? "IndiaMART" :
+                        lead.source === "tradeindia" ? "TradeIndia" :
+                        lead.source === "justdial" ? "Justdial" :
+                        lead.source === "alibaba" ? "Alibaba" :
+                        lead.source === "yellow_pages" ? "Yellow Pages" :
+                        lead.source
+                      }</span>
                       <span className="badge bg-surface text-muted-foreground">
                         {Math.round(lead.enrichmentConfidence * 100)}% conf
                       </span>
