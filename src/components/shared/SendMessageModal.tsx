@@ -46,26 +46,6 @@ export default function SendMessageModal({ lead, isOpen, onClose, defaultChannel
   const [sent, setSent] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    setSent(false);
-    setCopied(false);
-    fetchTemplates();
-  }, [isOpen, channel, lead.industry]);
-
-  const fetchTemplates = async () => {
-    try {
-      const res = await fetch(`/api/templates?industry=${lead.industry || "pharmaceutical"}&channel=${channel}`);
-      const data = await res.json();
-      if (data.templates?.length > 0) {
-        setTemplates(data.templates);
-        selectTemplate(data.templates[0]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch templates:", err);
-    }
-  };
-
   const selectTemplate = (tmpl: Template) => {
     setSelectedTemplate(tmpl);
     let body = tmpl.body;
@@ -83,6 +63,26 @@ export default function SendMessageModal({ lead, isOpen, onClose, defaultChannel
     setPreviewBody(body);
     setPreviewSubject(subject);
   };
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch(`/api/templates?industry=${lead.industry || "pharmaceutical"}&channel=${channel}`);
+      const data = await res.json();
+      if (data.templates?.length > 0) {
+        setTemplates(data.templates);
+        selectTemplate(data.templates[0]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch templates:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSent(false);
+    setCopied(false);
+    fetchTemplates();
+  }, [isOpen, channel, lead.industry]);
 
   const handleSend = async () => {
     if (!selectedTemplate) return;
