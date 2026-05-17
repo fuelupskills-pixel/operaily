@@ -1,4 +1,4 @@
-# OMNI-SIGMA 360 | Next-Gen AI CRM
+# OperAIly | Next-Gen AI CRM
 
 A comprehensive, AI-driven B2B CRM platform designed for automated outbound outreach, intelligent lead generation, and seamless multi-channel communication.
 
@@ -24,7 +24,7 @@ A comprehensive, AI-driven B2B CRM platform designed for automated outbound outr
 
 ## Installation Guide (Web Server / Production)
 
-Follow these steps to deploy OMNI-SIGMA 360 on a web server or Vercel.
+Follow these steps to deploy OperAIly on a web server or Vercel.
 
 ### 1. Prerequisites
 - Node.js 20+
@@ -34,8 +34,8 @@ Follow these steps to deploy OMNI-SIGMA 360 on a web server or Vercel.
 
 ### 2. Clone the Repository
 ```bash
-git clone https://github.com/fuelupskills-pixel/omni-sigma-360.git
-cd omni-sigma-360
+git clone https://github.com/fuelupskills-pixel/operaily.git
+cd operaily
 ```
 
 ### 3. Install Dependencies
@@ -69,7 +69,7 @@ npm run build
 1. Ensure Node.js is installed.
 2. Run with PM2 or a similar process manager:
    ```bash
-   pm2 start npm --name "omni-sigma" -- start
+   pm2 start npm --name "operaily" -- start
    ```
 3. Use Nginx as a reverse proxy for port 3000.
 
