@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useAuth } from "@/components/providers/AuthProvider";
 import {
   MessageSquare, Mail, Phone, Users, Shield, Key,
   Save, Plus, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff,
@@ -559,11 +560,14 @@ export default function SettingsContent() {
 }
 
 function IntegrationsDeck() {
+  const { user } = useAuth();
   const [activeConnections, setActiveConnections] = useState<Record<string, boolean>>({});
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
+  const orgId = user?.org_id || "default_org";
+
   React.useEffect(() => {
-    fetch("/api/integrations?org_id=default_org")
+    fetch(`/api/integrations?org_id=${orgId}`)
       .then(res => res.json())
       .then(res => {
         if (res.success && Array.isArray(res.data)) {
@@ -577,7 +581,7 @@ function IntegrationsDeck() {
         }
       })
       .catch(err => console.error("Failed to load integrations:", err));
-  }, []);
+  }, [orgId]);
 
   const handleToggle = async (id: string, provider: string) => {
     setLoadingProvider(id);
@@ -587,7 +591,7 @@ function IntegrationsDeck() {
         const response = await fetch(`/api/auth/revoke/${provider}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ org_id: "default_org", account_id: `act_${provider}_callback` })
+          body: JSON.stringify({ org_id: orgId, account_id: `act_${provider}_callback` })
         });
         const resData = await response.json();
         if (resData.success) {
@@ -595,7 +599,7 @@ function IntegrationsDeck() {
         }
       } else {
         // Dynamic Provider OAuth Init Routes
-        window.location.href = `/api/auth/${provider}?org_id=default_org`;
+        window.location.href = `/api/auth/${provider}?org_id=${orgId}`;
       }
     } catch (err) {
       console.error("Operation failed:", err);

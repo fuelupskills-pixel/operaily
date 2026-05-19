@@ -10,27 +10,45 @@ export async function POST(req: NextRequest, { params }: { params: { provider: s
 
     let accessTokenToRevoke = "";
 
+    const isSupabaseConfigured = !!(
+      supabaseUrl &&
+      supabaseUrl.startsWith("http") &&
+      supabaseKey &&
+      supabaseKey !== "your_supabase_service_role_key"
+    );
+
     // 1. Retrieve the active token from the database
-    if (supabaseUrl && supabaseKey) {
+    if (isSupabaseConfigured) {
       try {
         const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        const supabase = createClient(supabaseUrl!, supabaseKey!);
 
-        const { data } = await supabase
-          .from("user_integrations")
-          .select("access_token")
-          .match({ org_id, provider, account_id })
-          .single();
-
-        if (data?.access_token) {
-          accessTokenToRevoke = data.access_token;
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        let resolvedOrgId = org_id;
+        if (!uuidRegex.test(resolvedOrgId)) {
+          const { data: orgs } = await supabase.from("organizations").select("id").limit(1);
+          if (orgs && orgs.length > 0) {
+            resolvedOrgId = orgs[0].id;
+          }
         }
 
-        // Delete from the database
-        await supabase
-          .from("user_integrations")
-          .delete()
-          .match({ org_id, provider, account_id });
+        if (uuidRegex.test(resolvedOrgId)) {
+          const { data } = await supabase
+            .from("user_integrations")
+            .select("access_token")
+            .match({ org_id: resolvedOrgId, provider, account_id })
+            .single();
+
+          if (data?.access_token) {
+            accessTokenToRevoke = data.access_token;
+          }
+
+          // Delete from the database
+          await supabase
+            .from("user_integrations")
+            .delete()
+            .match({ org_id: resolvedOrgId, provider, account_id });
+        }
 
       } catch (e) {
         console.error("Failed to query database during revocation:", e);

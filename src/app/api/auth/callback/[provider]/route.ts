@@ -107,6 +107,51 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
       }
     }
 
+    // Securely retrieve account details from third-party APIs
+    let accountId = `act_${provider}_callback`;
+    let accountName = `${provider.toUpperCase()} Integration`;
+
+    if (tokenPayload.access_token && tokenPayload.access_token !== "mock_received_access_token_via_callback") {
+      if (provider === "google") {
+        try {
+          const userResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+            headers: { Authorization: `Bearer ${tokenPayload.access_token}` }
+          });
+          if (userResponse.ok) {
+            const userInfo = await userResponse.json();
+            accountId = userInfo.email || userInfo.id || accountId;
+            accountName = userInfo.name || userInfo.email || accountName;
+          }
+        } catch (err) {
+          console.warn("Failed to fetch Google profile details:", err);
+        }
+      } else if (provider === "facebook") {
+        try {
+          const userResponse = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${tokenPayload.access_token}`);
+          if (userResponse.ok) {
+            const userInfo = await userResponse.json();
+            accountId = userInfo.id || accountId;
+            accountName = userInfo.name || accountName;
+          }
+        } catch (err) {
+          console.warn("Failed to fetch Facebook profile details:", err);
+        }
+      } else if (provider === "outlook") {
+        try {
+          const userResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
+            headers: { Authorization: `Bearer ${tokenPayload.access_token}` }
+          });
+          if (userResponse.ok) {
+            const userInfo = await userResponse.json();
+            accountId = userInfo.mail || userInfo.userPrincipalName || userInfo.id || accountId;
+            accountName = userInfo.displayName || accountName;
+          }
+        } catch (err) {
+          console.warn("Failed to fetch Outlook profile details:", err);
+        }
+      }
+    }
+
     // Securely upsert credentials to Supabase or simulated mock store
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -115,21 +160,49 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
       ? new Date(Date.now() + tokenPayload.expires_in * 1000).toISOString()
       : null;
 
-    if (supabaseUrl && supabaseKey) {
+    const isSupabaseConfigured = !!(
+      supabaseUrl &&
+      supabaseUrl.startsWith("http") &&
+      supabaseKey &&
+      supabaseKey !== "your_supabase_service_role_key"
+    );
+
+    if (isSupabaseConfigured) {
       try {
         const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        const supabase = createClient(supabaseUrl!, supabaseKey!);
 
-        await supabase.from("user_integrations").upsert({
-          org_id,
-          provider,
-          account_id: `act_${provider}_callback`,
-          access_token: tokenPayload.access_token,
-          refresh_token: tokenPayload.refresh_token || null,
-          token_expires_at: expiryTime,
-          is_active: true,
-          updated_at: new Date().toISOString()
-        }, { onConflict: "org_id,provider,account_id" });
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        let resolvedOrgId = org_id;
+        if (!uuidRegex.test(resolvedOrgId)) {
+          const { data: orgs } = await supabase.from("organizations").select("id").limit(1);
+          if (orgs && orgs.length > 0) {
+            resolvedOrgId = orgs[0].id;
+          } else {
+            const { data: newOrg } = await supabase.from("organizations").insert({
+              name: "Default Organization",
+              slug: `default-org-${Math.floor(Math.random() * 1000)}`,
+              plan: "free"
+            }).select("id").single();
+            if (newOrg) {
+              resolvedOrgId = newOrg.id;
+            }
+          }
+        }
+
+        if (uuidRegex.test(resolvedOrgId)) {
+          await supabase.from("user_integrations").upsert({
+            org_id: resolvedOrgId,
+            provider,
+            account_id: accountId,
+            account_name: accountName,
+            access_token: tokenPayload.access_token,
+            refresh_token: tokenPayload.refresh_token || null,
+            token_expires_at: expiryTime,
+            is_active: true,
+            updated_at: new Date().toISOString()
+          }, { onConflict: "org_id,provider,account_id" });
+        }
 
       } catch (e) {
         console.error("Failed to write token callback to database:", e);
@@ -143,7 +216,7 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
           body: JSON.stringify({
             org_id,
             provider,
-            account_id: `act_${provider}_callback`,
+            account_id: accountId,
             credentials: {
               access_token: tokenPayload.access_token,
               refresh_token: tokenPayload.refresh_token || null,

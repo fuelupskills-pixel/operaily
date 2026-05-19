@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
 
     switch (provider) {
       case "google":
-        // YouTube, Analytics, and Google Ads scopes
+        // YouTube, Analytics, Google Ads, Gmail, Calendar, and Profile scopes
         const googleClientId = process.env.GOOGLE_CLIENT_ID;
         if (!googleClientId) {
           return NextResponse.redirect(`${origin}/api/auth/callback/${provider}?code=mock_google_flow_success&state=${state}`);
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
           `client_id=${googleClientId}` +
           `&redirect_uri=${encodeURIComponent(redirectUri)}` +
           `&response_type=code` +
-          `&scope=${encodeURIComponent("https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/adwords")}` +
+          `&scope=${encodeURIComponent("email profile openid https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/adwords https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly")}` +
           `&access_type=offline` +
           `&prompt=consent` +
           `&state=${state}`;
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
           `client_id=${metaAppId}` +
           `&redirect_uri=${encodeURIComponent(redirectUri)}` +
           `&state=${state}` +
-          `&scope=${encodeURIComponent("pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish")}`;
+          `&scope=${encodeURIComponent("public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish")}`;
         break;
 
       case "linkedin":
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
           `&response_type=code` +
           `&redirect_uri=${encodeURIComponent(redirectUri)}` +
           `&response_mode=query` +
-          `&scope=${encodeURIComponent("https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite")}` +
+          `&scope=${encodeURIComponent("openid email profile offline_access https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite")}` +
           `&state=${state}`;
         break;
 
