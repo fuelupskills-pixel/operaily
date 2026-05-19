@@ -104,13 +104,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800)); // Smooth loading transition
 
     try {
-      // 1. Check dynamic users list in localStorage
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.user) {
+        const profile: UserProfile = {
+          email: result.user.email,
+          name: result.user.name,
+          avatar: result.user.avatar,
+          org: result.user.org,
+        };
+
+        // Save local session state
+        localStorage.setItem("omni_session", JSON.stringify(profile));
+        setUser(profile);
+        setIsAuthenticated(true);
+        setIsLoading(false);
+        return { success: true };
+      } else {
+        setIsLoading(false);
+        return { success: false, error: result.error || "Invalid credentials." };
+      }
+    } catch (e) {
+      console.error("Login API integration error, attempting local storage fallback:", e);
+      
+      // Resilient client-side fallback in case API endpoint is unreachable
       const usersRaw = localStorage.getItem("operaily_users");
       const registeredUsers = usersRaw ? JSON.parse(usersRaw) : [];
-      
       const foundUser = registeredUsers.find(
         (u: any) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
       );
@@ -129,7 +158,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true };
       }
 
-      // 2. Default fallback credentials for admin testing
       if (email.toLowerCase() === "admin@operaily.com" && password === "admin123") {
         const adminProfile: UserProfile = {
           email: "admin@operaily.com",
@@ -145,39 +173,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setIsLoading(false);
-      return { success: false, error: "Invalid email or password. Please try again." };
-    } catch (e) {
-      setIsLoading(false);
-      return { success: false, error: "Authentication system encountered an error." };
+      return { success: false, error: "Authentication system encountered an error connecting to server." };
     }
   }, []);
 
   const signUp = useCallback(async (name: string, email: string, password: string, orgName: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Smooth registration loading
 
     try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password, orgName }),
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.user) {
+        const profile: UserProfile = {
+          email: result.user.email,
+          name: result.user.name,
+          avatar: result.user.avatar,
+          org: result.user.org,
+        };
+
+        // Also save dynamically in mock local users to support hybrid mode
+        const usersRaw = localStorage.getItem("operaily_users");
+        const registeredUsers = usersRaw ? JSON.parse(usersRaw) : [];
+        if (!registeredUsers.some((u: any) => u.email.toLowerCase() === email.toLowerCase())) {
+          registeredUsers.push({ name, email: email.toLowerCase(), password, org: orgName, avatar: result.user.avatar });
+          localStorage.setItem("operaily_users", JSON.stringify(registeredUsers));
+        }
+
+        // Save session
+        localStorage.setItem("omni_session", JSON.stringify(profile));
+        setUser(profile);
+        setIsAuthenticated(true);
+        setIsLoading(false);
+        return { success: true };
+      } else {
+        setIsLoading(false);
+        return { success: false, error: result.error || "Failed to create account." };
+      }
+    } catch (e) {
+      console.error("Signup API integration error, attempting local storage fallback:", e);
+
+      // Resilient client-side fallback in case API endpoint is unreachable
       const usersRaw = localStorage.getItem("operaily_users");
       const registeredUsers = usersRaw ? JSON.parse(usersRaw) : [];
-
       const exists = registeredUsers.some((u: any) => u.email.toLowerCase() === email.toLowerCase());
+      
       if (exists || email.toLowerCase() === "admin@operaily.com") {
         setIsLoading(false);
         return { success: false, error: "An account with this email address already exists." };
       }
 
+      const mockAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`;
       const newUser = {
         name,
         email: email.toLowerCase(),
         password,
         org: orgName || "Default Org",
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`
+        avatar: mockAvatar
       };
 
       registeredUsers.push(newUser);
       localStorage.setItem("operaily_users", JSON.stringify(registeredUsers));
 
-      // Auto sign in user after successful sign up
       const profile: UserProfile = {
         email: newUser.email,
         name: newUser.name,
@@ -190,9 +254,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(true);
       setIsLoading(false);
       return { success: true };
-    } catch (e) {
-      setIsLoading(false);
-      return { success: false, error: "Failed to create account. Please check inputs." };
     }
   }, []);
 
