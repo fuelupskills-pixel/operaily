@@ -582,7 +582,7 @@ ${selectedProduction.script.outro}
                         <Info className="w-3.5 h-3.5 text-warning" /> Thumbnail Guide
                       </h4>
                       <div className="p-3 bg-warning/5 border border-warning/15 rounded-lg text-[11px] text-muted-foreground leading-relaxed italic">
-                        "{selectedProduction.thumbnailConcept}"
+                        &ldquo;{selectedProduction.thumbnailConcept}&rdquo;
                       </div>
                     </div>
                   </div>
@@ -625,7 +625,7 @@ ${selectedProduction.script.outro}
             ) : (
               <div className="space-y-4">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Connect your brand's YouTube channel to allow OMNI-SIGMA 360's Chief AI Ops to fetch views, retention benchmarks, and execute direct publishes.
+                  Connect your brand&apos;s YouTube channel to allow OMNI-SIGMA 360&apos;s Chief AI Ops to fetch views, retention benchmarks, and execute direct publishes.
                 </p>
                 <div className="p-3 bg-surface/50 border border-border rounded-xl text-[10px] text-muted-foreground flex items-start gap-2 leading-relaxed">
                   <Info className="w-4 h-4 text-primary shrink-0" />

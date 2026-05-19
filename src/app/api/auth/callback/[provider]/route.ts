@@ -86,6 +86,25 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
       } catch (err) {
         console.error("LinkedIn token exchange failed, falling back to mock:", err);
       }
+    } else if (provider === "outlook" && (process.env.OUTLOOK_CLIENT_SECRET || process.env.MICROSOFT_CLIENT_SECRET)) {
+      try {
+        const response = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: process.env.OUTLOOK_CLIENT_ID || process.env.MICROSOFT_CLIENT_ID || "",
+            client_secret: process.env.OUTLOOK_CLIENT_SECRET || process.env.MICROSOFT_CLIENT_SECRET || "",
+            code,
+            redirect_uri: redirectUri,
+            grant_type: "authorization_code"
+          })
+        });
+        if (response.ok) {
+          tokenPayload = await response.json();
+        }
+      } catch (err) {
+        console.error("Outlook token exchange failed, falling back to mock:", err);
+      }
     }
 
     // Securely upsert credentials to Supabase or simulated mock store
@@ -114,6 +133,27 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
 
       } catch (e) {
         console.error("Failed to write token callback to database:", e);
+      }
+    } else {
+      // Supabase not configured: synchronize with the local in-memory mock database
+      try {
+        await fetch(`${origin}/api/integrations`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            org_id,
+            provider,
+            account_id: `act_${provider}_callback`,
+            credentials: {
+              access_token: tokenPayload.access_token,
+              refresh_token: tokenPayload.refresh_token || null,
+              expires_at: expiryTime
+            }
+          })
+        });
+        console.log(`[OAuth Callback] Synchronized ${provider} to in-memory mock integration store.`);
+      } catch (e) {
+        console.error("[OAuth Callback] Failed to write mock integration to database:", e);
       }
     }
 

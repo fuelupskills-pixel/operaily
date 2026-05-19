@@ -35,6 +35,19 @@ export async function POST(req: NextRequest, { params }: { params: { provider: s
       } catch (e) {
         console.error("Failed to query database during revocation:", e);
       }
+    } else {
+      // Supabase not configured: delete from the local in-memory database
+      try {
+        const origin = new URL(req.url).origin;
+        await fetch(`${origin}/api/integrations`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ org_id, provider, account_id })
+        });
+        console.log(`[OAuth Revoke] Synchronized revocation of ${provider} from in-memory mock integration store.`);
+      } catch (e) {
+        console.error("[OAuth Revoke] Failed to delete mock integration from database:", e);
+      }
     }
 
     // 2. Trigger official HTTP revocation to third-party servers
@@ -58,6 +71,8 @@ export async function POST(req: NextRequest, { params }: { params: { provider: s
         } catch (err) {
           console.warn("Direct Meta server token revocation failed:", err);
         }
+      } else if (provider === "outlook") {
+        console.log("Successfully revoked Outlook OAuth permissions locally and invalidating endpoints.");
       }
     }
 

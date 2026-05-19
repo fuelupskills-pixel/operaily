@@ -61,6 +61,15 @@ export default function SettingsContent() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const [saved, setSaved] = useState(false);
 
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("connected") || params.get("tab") === "integrations") {
+        setActiveTab("integrations");
+      }
+    }
+  }, []);
+
   // Profile
   const [profile, setProfile] = useState({
     companyName: "OMNI-SIGMA Exports",
@@ -596,6 +605,7 @@ function IntegrationsDeck() {
   };
 
   const integrations = [
+    { id: "outlook", label: "Outlook Mail & Calendar", desc: "Sync corporate mailboxes, schedules, and outreach sequences", provider: "outlook", icon: Mail, color: "text-blue-600" },
     { id: "youtube", label: "YouTube Studio", desc: "AI script generation, video upload, and channel insights", provider: "google", icon: Video, color: "text-red-500" },
     { id: "facebook", label: "Facebook Pages", desc: "Outbound campaign updates, analytics & comment moderation", provider: "facebook", icon: Globe, color: "text-blue-500" },
     { id: "instagram", label: "Instagram Business", desc: "Automated media publishing, reels schedule, and audience stats", provider: "facebook", icon: Camera, color: "text-pink-500" },

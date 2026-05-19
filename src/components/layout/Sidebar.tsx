@@ -23,6 +23,7 @@ import {
   Video,
   ShieldAlert,
   LogOut,
+  ShoppingBag,
 } from "lucide-react";
 
 const navItems = [
@@ -33,6 +34,7 @@ const navItems = [
   { id: "leads", label: "Leads", icon: Users },
   { id: "workflows", label: "Automations", icon: Workflow },
   { id: "agency", label: "AI Agency", icon: Globe, badge: "PRO" },
+  { id: "seller", label: "Seller Platform", icon: ShoppingBag, badge: "NEW" },
   { id: "conversations", label: "Conversations", icon: MessageSquare, badge: "3" },
   { id: "campaigns", label: "Ad Campaigns", icon: Megaphone },
   { id: "video", label: "Video Studio", icon: Video, badge: "AI" },
