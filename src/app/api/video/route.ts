@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { AIProvider } from "@/services/ai/provider";
 
 // Standard YouTube script structure interface
 interface GeneratedScriptResponse {
@@ -36,10 +36,6 @@ export async function POST(request: NextRequest) {
     // If a Gemini API key is available, generate a customized script!
     if (geminiKey) {
       try {
-        const genAI = new GoogleGenerativeAI(geminiKey);
-        // Using recommended 2.0 Flash model
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
         const prompt = `You are a viral YouTube scriptwriter and video strategist. Write a comprehensive, high-retention video script about "${topic}" for an audience of "${targetAudience}" using a "${tone}" tone.
         
         Generate a JSON output matching this schema:
@@ -66,8 +62,7 @@ export async function POST(request: NextRequest) {
         
         Ensure you only return valid JSON. Do not include markdown code block syntax.`;
 
-        const result = await model.generateContent(prompt);
-        const text = result.response.text().trim();
+        const text = await AIProvider.generateText({ prompt });
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const generatedData: GeneratedScriptResponse = JSON.parse(jsonMatch[0]);

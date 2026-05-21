@@ -1,16 +1,12 @@
 import { BaseAgent } from './base';
 import { AITask } from '@/types/agents';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
+import { AIProvider } from '@/services/ai/provider';
 export class CopywritingAgent extends BaseAgent {
   async execute(task: AITask): Promise<void> {
     try {
       await this.updateTaskStatus(task.id, 'running');
 
-      const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-      
+      // AI Provider used directly
       const prompt = `
         You are an Expert Copywriting Agent for OMNI-SIGMA 360.
         Your task: ${task.title}
@@ -24,9 +20,7 @@ export class CopywritingAgent extends BaseAgent {
         - blog_intro (string)
       `;
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const text = await AIProvider.generateText({ prompt });
       
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       const copy = jsonMatch ? JSON.parse(jsonMatch[0]) : { raw_text: text };

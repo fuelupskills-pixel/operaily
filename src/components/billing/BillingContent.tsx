@@ -18,7 +18,7 @@ import {
   DollarSign
 } from "lucide-react";
 
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 
 interface Invoice {

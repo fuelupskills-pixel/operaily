@@ -2,18 +2,14 @@
 // Uses Google Gemini for lead scoring, personalization hooks, and company enrichment
 // Falls back to heuristic scoring when API key not configured
 
-import { GoogleGenAI, Type } from '@google/genai';
+import { AIProvider } from '@/services/ai/provider';
 import type { RawLead, EnrichedLead } from "./types";
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export class EnrichmentService {
   private isConfigured: boolean;
-  private ai: GoogleGenAI | null;
 
   constructor() {
-    this.isConfigured = !!GEMINI_API_KEY;
-    this.ai = this.isConfigured ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+    this.isConfigured = true; // AIProvider handles key availability
   }
 
   async enrichBatch(
@@ -53,34 +49,16 @@ export class EnrichmentService {
         hasLinkedIn: !!l.linkedinUrl,
       }));
 
-      const response = await this.ai!.models.generateContent({
-        model: "gemini-flash-latest",
-        contents: JSON.stringify(leadsContext),
-        config: {
-          systemInstruction: `You are a B2B lead scoring AI for ${context.industry} in ${context.country}. For each lead, provide:
+      const systemInstruction = `You are a B2B lead scoring AI for ${context.industry} in ${context.country}. For each lead, provide:
 1. score (0-100): Based on title seniority, company relevance, data completeness
 2. personalizedHook: A one-line personalized outreach hook
 3. companySize: Estimated company size (Small/Medium/Large/Enterprise)
 4. companyRevenue: Estimated annual revenue range
-Return JSON array matching input order.`,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                score: { type: Type.INTEGER },
-                personalizedHook: { type: Type.STRING },
-                companySize: { type: Type.STRING },
-                companyRevenue: { type: Type.STRING },
-              },
-            },
-          },
-          temperature: 0.3,
-        },
-      });
+Return ONLY a valid JSON array matching input order.`;
 
-      const text = response.text;
+      const prompt = JSON.stringify(leadsContext);
+      
+      const text = await AIProvider.generateText({ prompt, systemInstruction });
       let aiResults: Array<{
         score: number;
         personalizedHook: string;

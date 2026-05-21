@@ -248,11 +248,10 @@ async function generateLeadResponse(input: string, historyContext: string = ""):
   }
 
   try {
-    const { GoogleGenerativeAI } = await import("@google/generative-ai");
-    const ai = new GoogleGenerativeAI(apiKey);
-    const model = ai.getGenerativeModel({ model: "gemini-flash-latest" });
-
-    const systemPrompt = `You are the OMNI Lead Qualification Agent, representing OperAIly CRM. 
+    const { AIProvider } = await import("@/services/ai/provider");
+    let aiResponse = "";
+    
+    const aiPrompt = `You are the OMNI Lead Qualification Agent, representing OperAIly CRM. 
 Your objective is to qualify the B2B prospect and guide them to schedule a demo at: https://omni-sigma-360-83ak.vercel.app/calendar.
 
 Guidelines:
@@ -264,8 +263,8 @@ ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}
 Prospect message: "${input}"
 Agent response:`;
 
-    const result = await model.generateContent(systemPrompt);
-    return result.response.text().trim();
+    const response = await AIProvider.generateText({ prompt: aiPrompt });
+    return response.trim();
   } catch (err) {
     console.error("Gemini call in WhatsApp Webhook failed:", err);
     throw new Error("Failed to generate response using Gemini AI.");

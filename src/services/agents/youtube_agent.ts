@@ -1,13 +1,10 @@
 import { BaseAgent } from './base';
 import { AITask } from '@/types/agents';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { AIProvider } from '@/services/ai/provider';
 
 export class YoutubeAgent extends BaseAgent {
-  private genAI: GoogleGenerativeAI;
-
   constructor(agent: any) {
     super(agent);
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   }
 
   async execute(task: AITask): Promise<void> {
@@ -41,7 +38,6 @@ export class YoutubeAgent extends BaseAgent {
   }
 
   private async generateScript(topic: string, audience: string) {
-    const model = this.genAI.getGenerativeModel({ model: "gemini-flash-latest" });
     const prompt = `You are a viral YouTube scriptwriter. Write a compelling, high-retention video script about "${topic}" for an audience of "${audience}".
     Include:
     1. Hook (first 30 seconds)
@@ -52,8 +48,8 @@ export class YoutubeAgent extends BaseAgent {
     
     Format with visual directions in brackets like [Cut to B-Roll of CRM dashboard].`;
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+    const responseText = await AIProvider.generateText({ prompt });
+    return responseText;
   }
 
   private async analyzePerformance(videoId: string) {

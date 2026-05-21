@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { AIProvider } from "@/services/ai/provider";
 
 interface LandingPageResponse {
   research: {
@@ -52,13 +52,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const geminiKey = process.env.GEMINI_API_KEY;
-
-    if (geminiKey) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
       try {
-        const genAI = new GoogleGenerativeAI(geminiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
         const styleColors = {
           sleek_saas: "Primary: HSL(217.2, 91.2%, 59.8%) (Royal Blue), Secondary: HSL(262.1, 83.3%, 57.8%) (Electric Indigo)",
           luxury_dark: "Primary: HSL(47.9, 95.8%, 53.1%) (Gold/Amber), Secondary: HSL(0, 0%, 9%) (Coal/Obsidian)",
@@ -134,8 +130,7 @@ export async function POST(request: NextRequest) {
         
         Return ONLY valid JSON. Do not include markdown code block syntax.`;
 
-        const result = await model.generateContent(prompt);
-        const text = result.response.text().trim();
+        const text = await AIProvider.generateText({ prompt });
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const generatedData: LandingPageResponse = JSON.parse(jsonMatch[0]);

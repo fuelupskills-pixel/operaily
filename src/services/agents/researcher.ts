@@ -1,16 +1,12 @@
 import { BaseAgent } from './base';
 import { AITask } from '@/types/agents';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
+import { AIProvider } from '@/services/ai/provider';
 export class TrendResearchAgent extends BaseAgent {
   async execute(task: AITask): Promise<void> {
     try {
       await this.updateTaskStatus(task.id, 'running');
 
-      const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-      
+      // AI Provider used directly
       const prompt = `
         You are a Trend Research Agent for OMNI-SIGMA 360.
         Your task: ${task.title}
@@ -25,9 +21,7 @@ export class TrendResearchAgent extends BaseAgent {
         - sentiment_analysis (string)
       `;
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const text = await AIProvider.generateText({ prompt });
       
       // Extract JSON from response (handling potential markdown)
       const jsonMatch = text.match(/\{[\s\S]*\}/);

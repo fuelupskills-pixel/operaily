@@ -123,6 +123,9 @@ export default function SettingsContent() {
     telnyxKey: "KEY...hidden...xyz",
     vapiKey: "vapi_...hidden...key",
     geminiKey: "AIzaSy...hidden...xyz",
+    anthropicKey: "sk-ant...hidden...xyz",
+    deepseekKey: "sk-ds...hidden...xyz",
+    memoKey: "sk-memo...hidden...xyz",
     apolloKey: "apo_...hidden...key",
   });
 
@@ -519,6 +522,9 @@ export default function SettingsContent() {
             "Secondary Voice (Telnyx)": [["telnyxKey", "API Key"]],
             "AI Voice (Vapi)": [["vapiKey", "API Key"]],
             "AI / Google Gemini": [["geminiKey", "API Key"]],
+            "AI / Anthropic Claude": [["anthropicKey", "API Key"]],
+            "AI / DeepSeek": [["deepseekKey", "API Key"]],
+            "AI / Memo": [["memoKey", "API Key"]],
             "Lead Hunter (Apollo)": [["apolloKey", "API Key"]],
           }).map(([group, keys]) => (
             <div key={group} className="glass-card p-5">

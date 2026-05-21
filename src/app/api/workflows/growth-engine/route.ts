@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { AIProvider } from "@/services/ai/provider";
 import { getLeadService } from "@/services/leads";
 
 export async function POST(request: NextRequest) {
@@ -22,14 +22,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing prospect name or email" }, { status: 400 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    let aiResponse: any = null;
-
-    if (apiKey) {
-      try {
-        const ai = new GoogleGenerativeAI(apiKey);
-        const model = ai.getGenerativeModel({ model: "gemini-flash-latest" });
-
+        // Use AI Provider abstraction
+        let aiResponse: any = null;
+        try {
         const prompt = `
           You are an elite AI growth agency orchestrator. Generate a complete sales growth campaign dataset for:
           - Prospect Name: ${prospectName}
@@ -84,18 +79,14 @@ export async function POST(request: NextRequest) {
           Return ONLY valid JSON, no markdown blocks.
         `;
 
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
-        const jsonText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        aiResponse = JSON.parse(jsonText);
-      } catch (err) {
-        console.error("Gemini failed:", err);
+        const responseText = await AIProvider.generateText({ prompt });
+        
+        let cleanedJson = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+        aiResponse = JSON.parse(cleanedJson);
+      } catch (error) {
+        console.error("[GrowthEngine] AI Provider Error:", error);
         return NextResponse.json({ success: false, error: "Failed to generate sales strategy with AI" }, { status: 500 });
       }
-    } else {
-      return NextResponse.json({ success: false, error: "GEMINI_API_KEY is not configured" }, { status: 501 });
-    }
-
     // Sync Lead to Database in real-time
     const leadService = getLeadService();
     const names = prospectName.split(" ");
