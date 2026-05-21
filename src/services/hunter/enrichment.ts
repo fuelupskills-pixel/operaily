@@ -54,7 +54,7 @@ export class EnrichmentService {
       }));
 
       const response = await this.ai!.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-flash-latest",
         contents: JSON.stringify(leadsContext),
         config: {
           systemInstruction: `You are a B2B lead scoring AI for ${context.industry} in ${context.country}. For each lead, provide:

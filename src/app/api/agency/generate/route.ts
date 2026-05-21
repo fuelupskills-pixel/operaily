@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     if (geminiKey) {
       try {
         const genAI = new GoogleGenerativeAI(geminiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const styleColors = {
           sleek_saas: "Primary: HSL(217.2, 91.2%, 59.8%) (Royal Blue), Secondary: HSL(262.1, 83.3%, 57.8%) (Electric Indigo)",

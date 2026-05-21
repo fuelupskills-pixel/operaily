@@ -250,7 +250,7 @@ async function generateLeadResponse(input: string, historyContext: string = ""):
   try {
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
     const ai = new GoogleGenerativeAI(apiKey);
-    const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = ai.getGenerativeModel({ model: "gemini-flash-latest" });
 
     const systemPrompt = `You are the OMNI Lead Qualification Agent, representing OperAIly CRM. 
 Your objective is to qualify the B2B prospect and guide them to schedule a demo at: https://omni-sigma-360-83ak.vercel.app/calendar.

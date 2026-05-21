@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       try {
         const genAI = new GoogleGenerativeAI(geminiKey);
         // Using recommended 2.0 Flash model
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const prompt = `You are a viral YouTube scriptwriter and video strategist. Write a comprehensive, high-retention video script about "${topic}" for an audience of "${targetAudience}" using a "${tone}" tone.
         

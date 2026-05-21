@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     if (apiKey) {
       try {
         const ai = new GoogleGenerativeAI(apiKey);
-        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = ai.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const prompt = `
           You are an elite AI growth agency orchestrator. Generate a complete sales growth campaign dataset for:

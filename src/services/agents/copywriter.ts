@@ -9,7 +9,7 @@ export class CopywritingAgent extends BaseAgent {
     try {
       await this.updateTaskStatus(task.id, 'running');
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
       
       const prompt = `
         You are an Expert Copywriting Agent for OMNI-SIGMA 360.

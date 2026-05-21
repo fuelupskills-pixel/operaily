@@ -9,7 +9,7 @@ export class TrendResearchAgent extends BaseAgent {
     try {
       await this.updateTaskStatus(task.id, 'running');
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
       
       const prompt = `
         You are a Trend Research Agent for OMNI-SIGMA 360.
