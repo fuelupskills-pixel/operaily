@@ -18,6 +18,9 @@ import {
   DollarSign
 } from "lucide-react";
 
+import { useAuth } from "@/contexts/AuthContext";
+import { createClient } from "@/lib/supabase/client";
+
 interface Invoice {
   id: string;
   number: string;
@@ -28,14 +31,41 @@ interface Invoice {
   dueDate: string;
 }
 
-const mockInvoices: Invoice[] = [
-  { id: "1", number: "INV-2026-001", client: "BioPharm Import GmbH", amount: 4500.00, status: "paid", date: "2026-05-10", dueDate: "2026-05-17" },
-  { id: "2", number: "INV-2026-002", client: "MedImport AG", amount: 2800.50, status: "pending", date: "2026-05-12", dueDate: "2026-05-19" },
-  { id: "3", number: "INV-2026-003", client: "Schmidt Pharma GmbH", amount: 1200.00, status: "overdue", date: "2026-04-28", dueDate: "2026-05-05" },
-];
-
 export default function BillingContent() {
+  const { user } = useAuth();
+  const orgId = user?.org_id || "default_org";
+  const supabase = createClient();
+
   const [isSyncing, setIsSyncing] = useState(false);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    async function fetchInvoices() {
+      if (!orgId) return;
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setInvoices(
+          data.map((d: any) => ({
+            id: d.id,
+            number: d.invoice_number,
+            client: "Customer", // TODO: Fetch from actual client relationship
+            amount: d.amount,
+            status: d.status.toLowerCase(),
+            date: new Date(d.date).toLocaleDateString(),
+            dueDate: new Date(new Date(d.date).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(), // 7 days later
+          }))
+        );
+      }
+      setLoading(false);
+    }
+    fetchInvoices();
+  }, [orgId, supabase]);
 
   const handleVyapaarSync = () => {
     setIsSyncing(true);
@@ -186,7 +216,11 @@ export default function BillingContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle">
-              {mockInvoices.map((inv) => (
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-8 text-sm text-muted-foreground">Loading invoices...</td></tr>
+              ) : invoices.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-8 text-sm text-muted-foreground">No invoices found. Create your first invoice!</td></tr>
+              ) : invoices.map((inv) => (
                 <tr key={inv.id} className="hover:bg-surface-hover transition-colors group">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">

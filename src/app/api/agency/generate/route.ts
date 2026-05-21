@@ -142,118 +142,18 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ success: true, data: generatedData });
         }
       } catch (geminiError) {
-        console.error("[API/Agency] Gemini generation failed, falling back:", geminiError);
+        console.error("[API/Agency] Gemini generation failed:", geminiError);
+        return NextResponse.json(
+          { error: "Failed to generate agency plan with AI" },
+          { status: 500 }
+        );
       }
+    } else {
+      return NextResponse.json(
+        { error: "GEMINI_API_KEY is not configured" },
+        { status: 501 }
+      );
     }
-
-    // High quality premium fallback mock data
-    const mockThemeColors = {
-      sleek_saas: { primary: "#3b82f6", secondary: "#8b5cf6" },
-      luxury_dark: { primary: "#fbbf24", secondary: "#1c1c1c" },
-      corporate_blue: { primary: "#2563eb", secondary: "#06b6d4" }
-    }[visualStyle as "sleek_saas" | "luxury_dark" | "corporate_blue"] || { primary: "#3b82f6", secondary: "#8b5cf6" };
-
-    const mockData: LandingPageResponse = {
-      research: {
-        targetAudiencePainPoints: [
-          "Spending hours manually copying prospects from lead finders to CRM pipelines.",
-          "Low email response rates due to cold, robotic, unpersonalized cold copy templates.",
-          "Unreliable lead sync pipelines resulting in missed notifications and lost prospects."
-        ],
-        competitorAnalysis: [
-          { competitor: "Manual Sales Hubs", gap: "Requires expensive labor, slow, human typing errors.", strength: "Simple list building." },
-          { competitor: "Legacy Outreach Builders", gap: "Lacks native CRM integrations, high subscription overhead.", strength: "Mass email blasts." }
-        ],
-        seoKeywords: [
-          `${productName.toLowerCase()} crm automation`,
-          "high converting saas landing page",
-          "real-time lead syncing pipeline",
-          "operaily CRM webhook integrations",
-          "autonomous landing page builder"
-        ],
-        offerPositioning: `The ultimate automated client acquisition engine for ${targetAudience}. Automatically capture, qualify, and sync inbound leads directly into your OperAIly CRM.`,
-        ctaRecommendations: {
-          primary: `Launch Your ${productName} Campaign`,
-          secondary: "Watch 2-Min Demo"
-        }
-      },
-      design: {
-        primaryColor: mockThemeColors.primary,
-        secondaryColor: mockThemeColors.secondary,
-        typography: { heading: "Outfit", body: "Inter" },
-        styleDescription: `A premium, dynamic glassmorphic responsive architecture based on a ${visualStyle.replace('_', ' ')} layout.`
-      },
-      copy: {
-        metaTitle: `${productName} | Scale Inbound Lead Generation Automatically`,
-        metaDescription: `Empower your outreach. Explore the complete conversion-focused landing page template for ${productName}, featuring automatic OperAIly CRM synchronization.`,
-        schemaJson: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Product",
-          "name": productName,
-          "description": productDescription,
-          "brand": { "@type": "Brand", "name": "OperAIly AI CRM" }
-        }, null, 2),
-        hero: {
-          headline: `Stop Wasting Time Scraping Leads. Start Scaling ${productName}.`,
-          subheadline: `A conversion-first, automated pipeline designed specifically to solve paint points for ${targetAudience}. Native OperAIly CRM integration pre-configured.`,
-          ctaText: "Start Scaling Now"
-        },
-        benefits: [
-          { title: "Real-Time OperAIly Sync", description: "Every lead captured on this landing page is instantly created in your CRM with customized campaign tags." },
-          { title: "A/B Conversion Optimized", description: "Engineered by visual designers using glassmorphic CTA grids and trust seals to maximize lead conversion rates." },
-          { title: "Instant Admin WhatsApp Alerts", description: "Receive background notifications on WhatsApp as soon as an enterprise lead books a consultation." }
-        ],
-        features: [
-          { title: "Frictionless Drop Form", description: "A beautiful, premium structured floating form linked to real-time email verification APIs.", icon: "FormInput" },
-          { title: "Intelligent Lead Scoring", description: "Assign automated high-intent scores to incoming leads based on corporate domain levels.", icon: "Target" },
-          { title: "Custom Redirect Routing", description: "Send hot qualified leads to booking schedulers and cooler prospects to automated email flows.", icon: "GitMerge" },
-          { title: "Meta & Google Tracking", description: "Pre-injected tracking pixels and Google Analytics events triggers to optimize ad spends.", icon: "LineChart" }
-        ],
-        testimonials: [
-          { name: "Sarah Jenkins", role: "CEO, GrowFast", quote: `Implementing the ${productName} landing page boosted our lead conversion rate by 34% in just two weeks! Seamless CRM sync is a game-changer.`, rating: 5 },
-          { name: "David Miller", role: "Growth Lead, TechCorp", quote: "No complex API triggers needed. Leads hit our OperAIly dashboard in less than a second. Simply flawless.", rating: 5 }
-        ],
-        pricing: {
-          tierName: "Starter Accelerator",
-          price: "$29/mo",
-          features: [
-            "1 Complete Landing Page Template",
-            "Unlimited Lead Syncing",
-            "Instant Webhook Setup",
-            "OperAIly CRM Integration",
-            "Premium Glassmorphic Theme Layout"
-          ],
-          description: "Perfect for fast-growing companies and agencies seeking to automate their outreach."
-        },
-        faqs: [
-          { question: `Does this require manual CRM mapping for ${productName}?`, answer: "No. The system automatically provisions the webhook pipelines, links the CRM endpoints, and starts syncing contacts out of the box." },
-          { question: "Can I use my own custom domain?", answer: "Yes, you can configure your custom domains directly under the Wix Studio or WordPress Settings panels in minutes." }
-        ],
-        footerText: `© 2026 ${productName}. Powered by the OperAIly AI CRM.`
-      },
-      automation: {
-        webhookCode: `// Node.js Zapier Webhook Trigger Code
-fetch('https://operaily.vercel.app/api/leads', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    firstName: input.name.split(' ')[0] || 'Lead',
-    lastName: input.name.split(' ')[1] || '',
-    email: input.email,
-    phone: input.phone || null,
-    source: '${productName} Landing Page',
-    leadScore: 85,
-    status: 'Qualified'
-  })
-}).then(res => res.json()).then(console.log);`,
-        operailyFormHook: "Inbound POST request automatically mapped to /api/leads with campaign headers."
-      }
-    };
-
-    // Add brief artificial delay to simulate AI agency work
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    return NextResponse.json({ success: true, data: mockData });
   } catch (error) {
     console.error("[API/Agency] Unexpected error:", error);
     return NextResponse.json(

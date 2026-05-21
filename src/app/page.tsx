@@ -24,7 +24,7 @@ import { Zap, ShieldAlert, Key, Mail, Lock, User, Building, AlertCircle, Loader2
 
 function AppContent() {
   const { isCollapsed, activeSection, setActiveSection } = useSidebar();
-  const { isAuthenticated, isLoading, login, signUp, loginWithSocial, loginWithOneClick } = useAuth();
+  const { isAuthenticated, isLoading, login, signUp, loginWithSocial } = useAuth();
   
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -38,6 +38,14 @@ function AppContent() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  React.useEffect(() => {
+    const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const rawKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const isConfigured = rawUrl && rawUrl.startsWith("http") && rawKey && !rawKey.includes("anon_key") && rawKey !== "your_supabase_anon_key";
+    setIsDemoMode(!isConfigured);
+  }, []);
 
   React.useEffect(() => {
     if (isAuthenticated && typeof window !== "undefined") {
@@ -145,7 +153,7 @@ function AppContent() {
     setIsSubmitting(false);
 
     if (result.success) {
-      setSuccessMsg("Account successfully registered!");
+      setSuccessMsg((result as any).message || "Account successfully registered!");
     } else {
       setErrorMsg(result.error || "Registration failed.");
     }
@@ -187,6 +195,87 @@ function AppContent() {
 
   // Premium Sign-In Gate Screen
   if (!isAuthenticated) {
+    if (isDemoMode) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+          {/* Ambient Glows */}
+          <div className="absolute top-10 left-10 w-[500px] h-[500px] rounded-full bg-amber-500/5 blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-10 right-10 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
+          
+          <div className="relative w-full max-w-lg glass-card p-8 space-y-6 z-10 border border-amber-500/30 shadow-2xl shadow-amber-500/5 animate-fade-in">
+            {/* Header */}
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-primary flex items-center justify-center mx-auto shadow-lg shadow-amber-500/20 animate-pulse">
+                <AlertCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Supabase Connection Required</h1>
+                <p className="text-xs text-muted-foreground mt-1 font-medium">Environment variables are not configured. Follow these instructions to launch the platform in your real environment.</p>
+              </div>
+            </div>
+
+            {/* Checklist */}
+            <div className="space-y-3 bg-surface/50 p-5 rounded-xl border border-border/40 text-xs">
+              <h2 className="font-bold text-white mb-2 uppercase tracking-wider text-[10px]">Setup Checklist</h2>
+              
+              <div className="flex items-start gap-3">
+                <div className="w-4 h-4 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-[9px] font-bold text-amber-400 shrink-0 mt-0.5">1</div>
+                <div>
+                  <p className="font-semibold text-white">Create a Supabase Project</p>
+                  <p className="text-muted-foreground mt-0.5">Go to <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">supabase.com</a> and create a new project database.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-4 h-4 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-[9px] font-bold text-amber-400 shrink-0 mt-0.5">2</div>
+                <div>
+                  <p className="font-semibold text-white">Retrieve API Keys</p>
+                  <p className="text-muted-foreground mt-0.5">Navigate to <b>Project Settings → API</b> and find the <code>Project URL</code>, <code>anon</code> public key, and <code>service_role</code> private key.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-4 h-4 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-[9px] font-bold text-amber-400 shrink-0 mt-0.5">3</div>
+                <div>
+                  <p className="font-semibold text-white">Configure Environment Secrets</p>
+                  <p className="text-muted-foreground mt-0.5">Create a <code>.env.local</code> file in your local workspace or configure your repository environment secrets (Vercel/GitHub):</p>
+                  <pre className="bg-background border border-border p-3 rounded-lg mt-2 overflow-x-auto text-[10px] text-muted-foreground font-mono select-all">
+{`NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here`}
+                  </pre>
+                </div>
+              </div>
+            </div>
+
+            {/* Warning details */}
+            <div className="p-3.5 bg-danger/10 border border-danger/20 rounded-xl text-xs text-danger/90">
+              <p className="font-semibold text-white">⚠️ Strict Security Warning</p>
+              <p className="text-[11px] mt-1 text-danger/80">Never expose the <code>SUPABASE_SERVICE_ROLE_KEY</code> in public client code or push it to version control systems like GitHub. Store it exclusively in secure backend server environment variables.</p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="flex-1 py-2.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium shadow-md shadow-amber-500/10 transition-all text-center cursor-pointer"
+              >
+                Verify Configuration
+              </button>
+              <a
+                href="https://supabase.com/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2.5 text-xs font-semibold rounded-lg bg-surface hover:bg-surface-hover border border-border/40 text-muted-foreground hover:text-white transition-all text-center cursor-pointer"
+              >
+                Supabase Docs
+              </a>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
         {/* Sleek Gradient Ambient Backdrops */}
@@ -238,6 +327,7 @@ function AppContent() {
           </div>
 
           {/* Messages */}
+
           {errorMsg && (
             <div className="p-3 bg-danger/10 border border-danger/20 rounded-xl text-xs text-danger flex items-center gap-2 animate-fade-in">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -434,19 +524,11 @@ function AppContent() {
             </button>
           </div>
 
-          {/* One-Click Secure Demo Bypass */}
+          {/* Production App Secured */}
           <div className="border-t border-border/40 pt-4 flex flex-col items-center gap-2">
-            <button
-              type="button"
-              onClick={loginWithOneClick}
-              className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 py-1 px-3 rounded-lg border border-border/30 hover:border-primary/30 bg-surface/30 cursor-pointer"
-            >
-              <Key className="w-3.5 h-3.5" />
-              <span>One-Click Secure Demo Bypass</span>
-            </button>
             <div className="flex items-center gap-1 text-[9px] text-muted-foreground/60 leading-none">
               <ShieldAlert className="w-3 h-3 text-primary shrink-0" />
-              <span>For FuelUpSkills executives only. Connection is SSL encrypted.</span>
+              <span>Production access only. Connection is SSL encrypted.</span>
             </div>
           </div>
         </div>

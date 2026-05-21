@@ -53,15 +53,15 @@ export class ApolloProvider {
   }
 
   async search(params: ProviderSearchParams): Promise<RawLead[]> {
-    if (this.isConfigured) {
-      try {
-        return await this.searchReal(params);
-      } catch (error) {
-        console.error("[Hunter/Apollo] API error, generating dynamic leads:", error);
-      }
+    if (!this.isConfigured) {
+      throw new Error("[Hunter/Apollo] APOLLO_API_KEY is not configured.");
     }
-    console.log(`[Hunter/Apollo] Generating dynamic leads for: ${params.industry} in ${params.country}`);
-    return this.generateDynamicLeads(params, 5 + Math.floor(Math.random() * 4));
+    try {
+      return await this.searchReal(params);
+    } catch (error) {
+      console.error("[Hunter/Apollo] API error:", error);
+      throw new Error(`[Hunter/Apollo] API search failed: ${error}`);
+    }
   }
 
   private async searchReal(params: ProviderSearchParams): Promise<RawLead[]> {

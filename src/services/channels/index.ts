@@ -1,6 +1,6 @@
 // OMNI-SIGMA 360 — Omni-Channel Service
 // Unified interface to WhatsApp, Email, SMS, and AI Voice
-// Each channel has real API integration + mock fallback
+// Always uses real API endpoints and returns errors if keys are missing
 
 import type { ChannelMessage, ChannelResponse } from "../workflows/types";
 
@@ -9,9 +9,8 @@ const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const WA_PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
 async function sendWhatsApp(msg: ChannelMessage): Promise<ChannelResponse> {
-  if (!WA_TOKEN || !WA_PHONE_ID) {
-    console.log(`[Channel/WhatsApp] MOCK → To: ${msg.to} | "${msg.content.slice(0, 60)}..."`);
-    return { success: true, messageId: `wa_mock_${Date.now()}`, provider: "meta_mock", status: "sent", error: null };
+  if (!WA_TOKEN || !WA_PHONE_ID || WA_TOKEN === "your_whatsapp_token") {
+    return { success: false, messageId: null, provider: "meta", status: "failed", error: "WhatsApp credentials are not configured in environment variables." };
   }
 
   try {
@@ -45,9 +44,8 @@ const RESEND_KEY = process.env.RESEND_API_KEY;
 const EMAIL_FROM = process.env.EMAIL_FROM_ADDRESS || "noreply@omnisigma.ai";
 
 async function sendEmail(msg: ChannelMessage): Promise<ChannelResponse> {
-  if (!RESEND_KEY) {
-    console.log(`[Channel/Email] MOCK → To: ${msg.to} | "${msg.content.slice(0, 60)}..."`);
-    return { success: true, messageId: `email_mock_${Date.now()}`, provider: "resend_mock", status: "sent", error: null };
+  if (!RESEND_KEY || RESEND_KEY === "your_resend_api_key") {
+    return { success: false, messageId: null, provider: "resend", status: "failed", error: "Resend Email API Key is not configured." };
   }
 
   try {
@@ -80,9 +78,8 @@ const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_FROM = process.env.TWILIO_PHONE_NUMBER;
 
 async function sendSMS(msg: ChannelMessage): Promise<ChannelResponse> {
-  if (!TWILIO_SID || !TWILIO_TOKEN) {
-    console.log(`[Channel/SMS] MOCK → To: ${msg.to} | "${msg.content.slice(0, 60)}..."`);
-    return { success: true, messageId: `sms_mock_${Date.now()}`, provider: "twilio_mock", status: "sent", error: null };
+  if (!TWILIO_SID || !TWILIO_TOKEN || TWILIO_SID === "your_twilio_sid") {
+    return { success: false, messageId: null, provider: "twilio", status: "failed", error: "Twilio credentials are not configured." };
   }
 
   try {
@@ -109,9 +106,8 @@ async function sendSMS(msg: ChannelMessage): Promise<ChannelResponse> {
 const VAPI_KEY = process.env.VAPI_API_KEY;
 
 async function makeVoiceCall(msg: ChannelMessage): Promise<ChannelResponse> {
-  if (!VAPI_KEY) {
-    console.log(`[Channel/Voice] MOCK → To: ${msg.to} | Script: "${msg.content.slice(0, 60)}..."`);
-    return { success: true, messageId: `voice_mock_${Date.now()}`, provider: "vapi_mock", status: "initiated", error: null };
+  if (!VAPI_KEY || VAPI_KEY === "your_vapi_api_key") {
+    return { success: false, messageId: null, provider: "vapi", status: "failed", error: "Vapi AI calling API Key is not configured." };
   }
 
   try {

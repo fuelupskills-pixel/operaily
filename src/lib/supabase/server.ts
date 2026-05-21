@@ -1,19 +1,38 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 
-// Server-side Supabase client with service role key
-// Use this for server actions, API routes, and background tasks
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)!;
+
+// For use in Server Components, API Routes, and Server Actions (anon/publishable key)
+export async function createClient() {
+  const cookieStore = await cookies();
+  return createSupabaseServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        } catch {
+          // Called from a Server Component — safe to ignore if middleware refreshes sessions
+        }
+      },
+    },
+  });
+}
+
+// For use in API Routes that need admin-level access (bypasses RLS)
 export function createServerClient() {
-  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const rawKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  const supabaseUrl = rawUrl && rawUrl.startsWith("http") ? rawUrl : "https://placeholder-project.supabase.co";
-  const supabaseServiceKey = rawKey && !rawKey.includes("service_role_key") ? rawKey : "placeholder-service-key";
-
-  return createClient(supabaseUrl, supabaseServiceKey, {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createAdminClient(supabaseUrl, serviceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
   });
 }
-

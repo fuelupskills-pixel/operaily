@@ -1,11 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
-const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const rawKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Use valid URL formats as fallbacks during build time to prevent compiler pre-render crashes
-const supabaseUrl = rawUrl && rawUrl.startsWith("http") ? rawUrl : "https://placeholder-project.supabase.co";
-const supabaseAnonKey = rawKey && !rawKey.includes("anon_key") ? rawKey : "placeholder-anon-key";
+// Singleton browser client for use in Client Components
+export const supabase = createBrowserClient(supabaseUrl, supabaseKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
+// Factory function (use in AuthProvider, hooks, etc.)
+export const createClient = () => createBrowserClient(supabaseUrl, supabaseKey);

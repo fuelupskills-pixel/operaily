@@ -49,14 +49,161 @@ export async function POST(req: NextRequest) {
 
         console.log(`Received WhatsApp message from [${leadPhoneNumber}]: "${messageText}" (ID: ${messageId})`);
 
-        // Orchestrate AI Response for Lead Qualification
-        const aiResponse = generateLeadResponse(messageText);
+        // Fetch conversation history from Supabase if configured
+        let historyText = "";
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const isSupabaseConfigured = !!(
+          supabaseUrl &&
+          supabaseUrl.startsWith("http") &&
+          supabaseKey &&
+          supabaseKey !== "your_service_role_key" &&
+          supabaseKey !== "your_supabase_service_role_key"
+        );
+
+        if (isSupabaseConfigured) {
+          try {
+            const { createClient } = await import("@supabase/supabase-js");
+            const supabase = createClient(supabaseUrl!, supabaseKey!);
+
+            const { data: lead } = await supabase
+              .from("leads")
+              .select("id")
+              .or(`whatsapp.eq.${leadPhoneNumber},phone.eq.${leadPhoneNumber}`)
+              .limit(1)
+              .maybeSingle();
+
+            if (lead) {
+              const { data: conv } = await supabase
+                .from("conversations")
+                .select("id")
+                .eq("lead_id", lead.id)
+                .eq("channel", "whatsapp")
+                .limit(1)
+                .maybeSingle();
+
+              if (conv) {
+                const { data: msgs } = await supabase
+                  .from("messages")
+                  .select("direction,content")
+                  .eq("conversation_id", conv.id)
+                  .order("created_at", { ascending: false })
+                  .limit(5);
+
+                if (msgs && msgs.length > 0) {
+                  historyText = msgs
+                    .reverse()
+                    .map((m: any) => `${m.direction === "inbound" ? "Prospect" : "Agent"}: ${m.content}`)
+                    .join("\n");
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Failed to fetch WhatsApp history:", e);
+          }
+        }
+
+        // Orchestrate AI Response for Lead Qualification using Gemini
+        const aiResponse = await generateLeadResponse(messageText, historyText);
+
+        // Sync Conversation & Message records to Supabase in real-time
+        if (isSupabaseConfigured) {
+          try {
+            const { createClient } = await import("@supabase/supabase-js");
+            const supabase = createClient(supabaseUrl!, supabaseKey!);
+
+            let leadId = "";
+            const { data: existingLead } = await supabase
+              .from("leads")
+              .select("id")
+              .or(`whatsapp.eq.${leadPhoneNumber},phone.eq.${leadPhoneNumber}`)
+              .limit(1)
+              .maybeSingle();
+
+            if (existingLead) {
+              leadId = existingLead.id;
+            } else {
+              const { data: orgs } = await supabase.from("organizations").select("id").limit(1);
+              const orgId = orgs?.[0]?.id;
+              if (orgId) {
+                const { data: newLead } = await supabase
+                  .from("leads")
+                  .insert({
+                    org_id: orgId,
+                    first_name: "WhatsApp",
+                    last_name: "Prospect",
+                    whatsapp: leadPhoneNumber,
+                    phone: leadPhoneNumber,
+                    source: "manual",
+                    status: "new",
+                  })
+                  .select("id")
+                  .single();
+                if (newLead) leadId = newLead.id;
+              }
+            }
+
+            if (leadId) {
+              let convId = "";
+              const { data: existingConv } = await supabase
+                .from("conversations")
+                .select("id")
+                .eq("lead_id", leadId)
+                .eq("channel", "whatsapp")
+                .limit(1)
+                .maybeSingle();
+
+              if (existingConv) {
+                convId = existingConv.id;
+              } else {
+                const { data: orgs } = await supabase.from("organizations").select("id").limit(1);
+                const orgId = orgs?.[0]?.id;
+                if (orgId) {
+                  const { data: newConv } = await supabase
+                    .from("conversations")
+                    .insert({
+                      org_id: orgId,
+                      lead_id: leadId,
+                      channel: "whatsapp",
+                      status: "open",
+                      last_message_at: new Date().toISOString(),
+                    })
+                    .select("id")
+                    .single();
+                  if (newConv) convId = newConv.id;
+                }
+              }
+
+              if (convId) {
+                await supabase.from("messages").insert({
+                  conversation_id: convId,
+                  direction: "inbound",
+                  sender_type: "lead",
+                  content: messageText,
+                  status: "read",
+                });
+
+                await supabase.from("messages").insert({
+                  conversation_id: convId,
+                  direction: "outbound",
+                  sender_type: "ai",
+                  content: aiResponse,
+                  status: "sent",
+                });
+
+                await supabase.from("conversations").update({ last_message_at: new Date().toISOString() }).eq("id", convId);
+              }
+            }
+          } catch (e) {
+            console.error("Failed to log WhatsApp conversation in database:", e);
+          }
+        }
 
         // Call Meta Graph API to send response to user
         const token = process.env.WHATSAPP_ACCESS_TOKEN;
         const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
-        if (token && phoneId) {
+        if (token && phoneId && token !== "your_whatsapp_token") {
           const response = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
             method: "POST",
             headers: {
@@ -94,21 +241,35 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Simulated Lead Qualification Agent reasoning
-function generateLeadResponse(input: string): string {
-  const query = input.toLowerCase();
-  
-  if (query.includes("pricing") || query.includes("cost") || query.includes("how much")) {
-    return "Thanks for asking! OMNI-SIGMA 360 plans scale directly with your active AI agent workforce requirements. Standard access starts at $49/mo. Would you like to schedule a quick visual demo?";
-  }
-  
-  if (query.includes("demo") || query.includes("book") || query.includes("schedule") || query.includes("talk")) {
-    return "Excellent! I can book you in right away. Click this link to open our interactive schedule planner: https://omni-sigma-360-83ak.vercel.app/calendar or let me know your preferred day!";
-  }
-  
-  if (query.includes("hello") || query.includes("hi") || query.includes("hey")) {
-    return "Hi there! I am the OMNI Lead Qualification Agent. I'm here to help you configure your multi-channel sales pipelines. What CRM modules can I guide you with today?";
+async function generateLeadResponse(input: string, historyContext: string = ""): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === "your_gemini_api_key") {
+    throw new Error("GEMINI_API_KEY is missing. Cannot generate AI response.");
   }
 
-  return "Received! I have routed your query to our Chief AI Ops agent. They will audit the details and follow up with a comprehensive strategy brief in just a few minutes. Is there anything else you'd like to add?";
+  try {
+    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+    const ai = new GoogleGenerativeAI(apiKey);
+    const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    const systemPrompt = `You are the OMNI Lead Qualification Agent, representing OperAIly CRM. 
+Your objective is to qualify the B2B prospect and guide them to schedule a demo at: https://omni-sigma-360-83ak.vercel.app/calendar.
+
+Guidelines:
+- Keep the response brief, friendly, and conversational (max 2-3 sentences).
+- Address their query directly.
+- Base plans start at $49/mo.
+
+${historyContext ? `Conversation history:\n${historyContext}\n` : ""}
+Prospect message: "${input}"
+Agent response:`;
+
+    const result = await model.generateContent(systemPrompt);
+    return result.response.text().trim();
+  } catch (err) {
+    console.error("Gemini call in WhatsApp Webhook failed:", err);
+    throw new Error("Failed to generate response using Gemini AI.");
+  }
 }
+
+

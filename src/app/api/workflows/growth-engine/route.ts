@@ -89,57 +89,11 @@ export async function POST(request: NextRequest) {
         const jsonText = text.replace(/```json/g, "").replace(/```/g, "").trim();
         aiResponse = JSON.parse(jsonText);
       } catch (err) {
-        console.error("Gemini failed, using premium mock fallback:", err);
+        console.error("Gemini failed:", err);
+        return NextResponse.json({ success: false, error: "Failed to generate sales strategy with AI" }, { status: 500 });
       }
-    }
-
-    // High-quality mock fallback if Gemini is absent or errors
-    if (!aiResponse) {
-      aiResponse = {
-        whatsapp: {
-          introMessage: `Hello ${prospectName.split(" ")[0]},\n\nI noticed ${companyName || "your company"} is scaling outreach in ${geography}. OperAIly CRM will help you automate sales sequences, book appointments, and capture inbound leads from Justdial/IndiaMART in real-time.\n\nHere is our executive brochure: https://operaily.com/brochure.pdf\n\nLet me know if we can schedule a quick Meet call!`,
-          brochureUrl: "https://operaily.com/brochure.pdf",
-          catalogUrl: "https://operaily.com/catalog.pdf"
-        },
-        emails: [
-          { day: 1, subject: `Welcome to OperAIly CRM — Let's scale ${companyName || "your team"}!`, body: `Hi ${prospectName},\n\nThanks for checking out OperAIly CRM. We assist B2B organizations in normalising lead capture and syncing active contacts instantly.\n\nHere is our pricing specifications sheet: https://operaily.com/pricing.pdf` },
-          { day: 2, subject: `Objection Busters: How OperAIly CRM doubles conversion`, body: `Hi ${prospectName},\n\nMany ${industry} leaders ask if connecting Justdial/Wix is complex. It's fully zero-code! We trigger automated WhatsApp brochures instantly.` },
-          { day: 4, subject: `Special Incentive: Exclusive 20% discount offer`, body: `Hi ${prospectName},\n\nFor the next 48 hours, activate a custom license tier for just $3,920/year.\n\nPayment link: https://stripe.com/pay/operaily-promo` },
-          { day: 7, subject: `Is this still a priority?`, body: `Hi ${prospectName},\n\nI understand you are busy. Here is our calendar booking link to schedule a direct consult whenever convenient: https://operaily.vercel.app/book` }
-        ],
-        objections: [
-          { objection: "Too expensive / Budget issue", reply: "OperAIly pays for itself in 30 days by automating manual cold calling and normalising Justdial/IndiaMART capture. We can also split payments into quarterly terms." },
-          { objection: "We already use Salesforce / HubSpot", reply: "OperAIly operates on top of legacy CRMs as an active multi-agent workflow layer, automating the actual outbound outreach, generating videos, and scheduling calls on autopilot." }
-        ],
-        voiceCall: {
-          greeting: `Hello ${prospectName}! This is Sarah, your OperAIly virtual AI success agent. I saw you recently requested information about normalising your B2B lead sync channels. Is this a good time?`,
-          objectionHandler: "I completely understand budget is top of mind. However, OperAIly operates 24/7 with zero overhead, replacing manual calling agencies. Should we book a quick demonstration call?",
-          qualificationQuestion: "What is your main customer acquisition bottleneck right now—lead generation volume, follow-up speed, or manual data entry?"
-        },
-        proposal: {
-          title: `Elite Sales Growth Proposal for ${companyName || prospectName}`,
-          introduction: `This tailored business roadmap outlines the integration of OperAIly CRM's multi-agent sales operations workspace for ${companyName || "your team"} to accelerate customer acquisition.`,
-          deliverables: [
-            "Real-time Lead Capture Normalization (Justdial, Wix, IndiaMART)",
-            "Automated Personalized WhatsApp Outreach & 30-Day Nurturing",
-            "Real-time Google Meet & Microsoft Teams Appointment Scheduler",
-            "Autonomous AI Voice Cold Calling & Objection Handling Engine"
-          ],
-          investment: "$4,900 / year (Fully Managed License)"
-        },
-        invoice: {
-          invoiceNumber: `INV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-          items: [
-            { description: `${productInterest} Managed Setup & Operations`, amount: 4900 }
-          ],
-          total: 4900,
-          paymentLink: paymentGateway === "stripe" ? "https://checkout.stripe.com/pay/operaily_managed_enterprise" : "https://rzp.io/l/operaily_managed_enterprise"
-        },
-        retargeting: {
-          awarenessAd: `🔥 Stop losing leads to slow follow-ups. Automate B2B lead nurturing inside OperAIly CRM today.`,
-          testimonialAd: `⭐ "OperAIly tripled our appointment booking rates within 3 weeks of syncing Justdial leads." - David L., Tech Founders Inc.`
-        }
-      };
+    } else {
+      return NextResponse.json({ success: false, error: "GEMINI_API_KEY is not configured" }, { status: 501 });
     }
 
     // Sync Lead to Database in real-time

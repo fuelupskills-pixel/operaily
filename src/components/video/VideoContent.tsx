@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/components/providers/AuthProvider";
 import {
   Play, BarChart3, TrendingUp, Users, 
   Clock, Plus, ArrowUpRight, Search, Filter,
@@ -59,7 +60,13 @@ const initialProductions = [
   }
 ];
 
+import { createClient } from "@/lib/supabase/client";
+
 export default function VideoContent() {
+  const { user } = useAuth();
+  const orgId = user?.org_id || "default_org";
+  const supabase = createClient();
+
   const [activeTab, setActiveSection] = useState<'analytics' | 'production'>('analytics');
   const [isChannelConnected, setIsChannelConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -74,22 +81,49 @@ export default function VideoContent() {
   // Production Execution State
   const [isProducing, setIsProducing] = useState(false);
   const [productionStep, setProductionStep] = useState(0);
-  const [productions, setProductions] = useState(initialProductions);
-  const [selectedProduction, setSelectedProduction] = useState<any>(initialProductions[0]);
+  const [productions, setProductions] = useState<any[]>([]);
+  const [selectedProduction, setSelectedProduction] = useState<any>(null);
+  
+  // Real Database Fetching
+  useEffect(() => {
+    async function fetchProductions() {
+      if (!orgId) return;
+      const { data, error } = await supabase
+        .from('video_productions')
+        .select('*')
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setProductions(data);
+        if (data.length > 0) setSelectedProduction(data[0]);
+      }
+    }
+    fetchProductions();
+  }, [orgId, supabase]);
   
   // UI Helpers
   const [copiedTag, setCopiedTag] = useState<string | null>(null);
   const [isScriptCopied, setIsScriptCopied] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
 
-  // Trigger simulated channel connection
+  // Query integrations to see if Google/YouTube is connected
+  useEffect(() => {
+    fetch(`/api/integrations?org_id=${orgId}`)
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && Array.isArray(res.data)) {
+          const isGoogleConnected = res.data.some((item: any) => item.provider === "google" && item.is_active);
+          setIsChannelConnected(isGoogleConnected);
+        }
+      })
+      .catch(err => console.error("Failed to check Google channel connection:", err));
+  }, [orgId]);
+
+  // Trigger real channel connection
   const handleConnectChannel = () => {
     setIsConnecting(true);
-    setTimeout(() => {
-      setIsConnecting(false);
-      setIsChannelConnected(true);
-      setShowConnectModal(false);
-    }, 2000);
+    window.location.href = `/api/auth/google?org_id=${orgId}`;
   };
 
   // Run AI Video Script Production Simulation
@@ -120,21 +154,30 @@ export default function VideoContent() {
             
             if (result.success && result.data) {
               const newProd = {
-                id: `p_${Date.now()}`,
+                org_id: orgId,
                 topic: result.data.topic,
-                targetAudience: result.data.targetAudience,
+                target_audience: result.data.targetAudience,
                 tone: result.data.tone,
                 status: "completed",
-                suggestedTitles: result.data.suggestedTitles,
-                suggestedTags: result.data.suggestedTags,
-                estimatedDuration: result.data.estimatedDuration,
-                thumbnailConcept: result.data.thumbnailConcept,
-                createdAt: "Just now",
+                suggested_titles: result.data.suggestedTitles,
+                suggested_tags: result.data.suggestedTags,
+                estimated_duration: result.data.estimatedDuration,
+                thumbnail_concept: result.data.thumbnailConcept,
                 script: result.data.script
               };
               
-              setProductions([newProd, ...productions]);
-              setSelectedProduction(newProd);
+              const { data, error } = await supabase
+                .from('video_productions')
+                .insert([newProd])
+                .select()
+                .single();
+
+              if (!error && data) {
+                setProductions([data, ...productions]);
+                setSelectedProduction(data);
+              } else {
+                console.error("Failed to save to Supabase:", error);
+              }
             }
           } catch (err) {
             console.error("Failed to generate AI script:", err);
@@ -155,10 +198,10 @@ export default function VideoContent() {
     if (!selectedProduction) return;
     const scriptText = `
 TITLE OPTIONS:
-${selectedProduction.suggestedTitles.map((t: string, i: number) => `${i + 1}. ${t}`).join("\n")}
+${selectedProduction.suggested_titles?.map((t: string, i: number) => `${i + 1}. ${t}`).join("\n")}
 
-ESTIMATED DURATION: ${selectedProduction.estimatedDuration}
-RECOMMENDED THUMBNAIL: ${selectedProduction.thumbnailConcept}
+ESTIMATED DURATION: ${selectedProduction.estimated_duration}
+RECOMMENDED THUMBNAIL: ${selectedProduction.thumbnail_concept}
 
 --- SCRIPT START ---
 HOOK:
@@ -391,12 +434,12 @@ ${selectedProduction.script.outro}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold truncate text-foreground">{prod.topic}</p>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">Audience: {prod.targetAudience}</p>
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">Audience: {prod.target_audience}</p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-[9px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-md uppercase tracking-wide">
                           {prod.status}
                         </span>
-                        <span className="text-[10px] text-muted-foreground">{prod.createdAt}</span>
+                        <span className="text-[10px] text-muted-foreground">{new Date(prod.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </button>
@@ -417,7 +460,7 @@ ${selectedProduction.script.outro}
                     </div>
                     <div>
                       <h3 className="text-xs font-bold text-foreground">AI Outline: {selectedProduction.topic}</h3>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Audience: {selectedProduction.targetAudience} · Tone: {selectedProduction.tone}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Audience: {selectedProduction.target_audience} · Tone: {selectedProduction.tone}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -537,7 +580,7 @@ ${selectedProduction.script.outro}
                         <TrendingUp className="w-3.5 h-3.5 text-primary" /> Title Concepts
                       </h4>
                       <div className="space-y-2">
-                        {selectedProduction.suggestedTitles.map((title: string, i: number) => (
+                        {selectedProduction.suggested_titles?.map((title: string, i: number) => (
                           <div key={i} className="p-2.5 bg-surface/60 border border-border rounded-lg text-[11px] font-semibold text-foreground leading-normal shadow-sm">
                             {title}
                           </div>
@@ -551,7 +594,7 @@ ${selectedProduction.script.outro}
                         <Search className="w-3.5 h-3.5 text-accent" /> Recommended Tags
                       </h4>
                       <div className="flex flex-wrap gap-1.5">
-                        {selectedProduction.suggestedTags.map((tag: string, i: number) => (
+                        {selectedProduction.suggested_tags?.map((tag: string, i: number) => (
                           <button 
                             key={i} 
                             onClick={() => handleCopyTag(tag)}
@@ -570,8 +613,8 @@ ${selectedProduction.script.outro}
                         <Clock className="w-3.5 h-3.5 text-success" /> Production Info
                       </h4>
                       <div className="p-3 bg-surface/60 border border-border rounded-lg text-xs font-semibold text-muted-foreground space-y-1.5">
-                        <div className="flex justify-between"><span>Duration:</span> <span className="text-foreground">{selectedProduction.estimatedDuration}</span></div>
-                        <div className="flex justify-between"><span>Target:</span> <span className="text-foreground truncate max-w-[120px]">{selectedProduction.targetAudience}</span></div>
+                        <div className="flex justify-between"><span>Duration:</span> <span className="text-foreground">{selectedProduction.estimated_duration}</span></div>
+                        <div className="flex justify-between"><span>Target:</span> <span className="text-foreground truncate max-w-[120px]">{selectedProduction.target_audience}</span></div>
                         <div className="flex justify-between"><span>Tone:</span> <span className="text-foreground">{selectedProduction.tone}</span></div>
                       </div>
                     </div>
@@ -582,7 +625,7 @@ ${selectedProduction.script.outro}
                         <Info className="w-3.5 h-3.5 text-warning" /> Thumbnail Guide
                       </h4>
                       <div className="p-3 bg-warning/5 border border-warning/15 rounded-lg text-[11px] text-muted-foreground leading-relaxed italic">
-                        &ldquo;{selectedProduction.thumbnailConcept}&rdquo;
+                        &ldquo;{selectedProduction.thumbnail_concept}&rdquo;
                       </div>
                     </div>
                   </div>

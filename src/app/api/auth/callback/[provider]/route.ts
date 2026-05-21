@@ -23,95 +23,142 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
       console.warn("Failed to parse OAuth state, using defaults:", e);
     }
 
-    let tokenPayload = {
-      access_token: "mock_received_access_token_via_callback",
-      refresh_token: "mock_received_refresh_token_via_callback",
-      expires_in: 3600
-    };
-
-    // Determine exchange URL endpoints
-    const redirectUri = `${origin}/api/auth/callback/${provider}`;
-
-    // Execute backend token exchange if active client variables exist
-    if (provider === "google" && process.env.GOOGLE_CLIENT_SECRET) {
-      try {
-        const response = await fetch("https://oauth2.googleapis.com/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            code,
-            client_id: process.env.GOOGLE_CLIENT_ID || "",
-            client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
-            redirect_uri: redirectUri,
-            grant_type: "authorization_code"
-          })
-        });
-        if (response.ok) {
-          tokenPayload = await response.json();
-        }
-      } catch (err) {
-        console.error("Google token exchange failed, falling back to mock:", err);
-      }
-    } else if (provider === "facebook" && process.env.META_APP_SECRET) {
-      try {
-        const response = await fetch(
-          `https://graph.facebook.com/v19.0/oauth/access_token?` +
-          `client_id=${process.env.META_APP_ID || ""}` +
-          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-          `&client_secret=${process.env.META_APP_SECRET || ""}` +
-          `&code=${code}`
-        );
-        if (response.ok) {
-          tokenPayload = await response.json();
-        }
-      } catch (err) {
-        console.error("Facebook token exchange failed, falling back to mock:", err);
-      }
-    } else if (provider === "linkedin" && process.env.LINKEDIN_CLIENT_SECRET) {
-      try {
-        const response = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            grant_type: "authorization_code",
-            code,
-            client_id: process.env.LINKEDIN_CLIENT_ID || "",
-            client_secret: process.env.LINKEDIN_CLIENT_SECRET || "",
-            redirect_uri: redirectUri
-          })
-        });
-        if (response.ok) {
-          tokenPayload = await response.json();
-        }
-      } catch (err) {
-        console.error("LinkedIn token exchange failed, falling back to mock:", err);
-      }
-    } else if (provider === "outlook" && (process.env.OUTLOOK_CLIENT_SECRET || process.env.MICROSOFT_CLIENT_SECRET)) {
-      try {
-        const response = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            client_id: process.env.OUTLOOK_CLIENT_ID || process.env.MICROSOFT_CLIENT_ID || "",
-            client_secret: process.env.OUTLOOK_CLIENT_SECRET || process.env.MICROSOFT_CLIENT_SECRET || "",
-            code,
-            redirect_uri: redirectUri,
-            grant_type: "authorization_code"
-          })
-        });
-        if (response.ok) {
-          tokenPayload = await response.json();
-        }
-      } catch (err) {
-        console.error("Outlook token exchange failed, falling back to mock:", err);
-      }
-    }
-
-    // Securely retrieve account details from third-party APIs
+    let tokenPayload: any = null;
     let accountId = `act_${provider}_callback`;
     let accountName = `${provider.toUpperCase()} Integration`;
 
-    if (tokenPayload.access_token && tokenPayload.access_token !== "mock_received_access_token_via_callback") {
+    const redirectUri = `${origin}/api/auth/callback/${provider}`;
+
+    if (provider === "google") {
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      if (!clientSecret || !clientId) {
+        return NextResponse.json({ success: false, error: "Google client credentials are not configured on the server." }, { status: 500 });
+      }
+      const response = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code"
+        })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        return NextResponse.json({ success: false, error: `Google OAuth token exchange failed: ${errorText}` }, { status: 400 });
+      }
+      tokenPayload = await response.json();
+    } else if (provider === "facebook") {
+      const clientSecret = process.env.META_APP_SECRET;
+      const clientId = process.env.META_APP_ID;
+      if (!clientSecret || !clientId) {
+        return NextResponse.json({ success: false, error: "Facebook/Meta client credentials are not configured on the server." }, { status: 500 });
+      }
+      const response = await fetch(
+        `https://graph.facebook.com/v19.0/oauth/access_token?` +
+        `client_id=${clientId}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&client_secret=${clientSecret}` +
+        `&code=${code}`
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        return NextResponse.json({ success: false, error: `Facebook token exchange failed: ${errorText}` }, { status: 400 });
+      }
+      tokenPayload = await response.json();
+    } else if (provider === "linkedin") {
+      const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+      const clientId = process.env.LINKEDIN_CLIENT_ID;
+      if (!clientSecret || !clientId) {
+        return NextResponse.json({ success: false, error: "LinkedIn client credentials are not configured on the server." }, { status: 500 });
+      }
+      const response = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri
+        })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        return NextResponse.json({ success: false, error: `LinkedIn token exchange failed: ${errorText}` }, { status: 400 });
+      }
+      tokenPayload = await response.json();
+    } else if (provider === "outlook") {
+      const clientSecret = process.env.OUTLOOK_CLIENT_SECRET || process.env.MICROSOFT_CLIENT_SECRET;
+      const clientId = process.env.OUTLOOK_CLIENT_ID || process.env.MICROSOFT_CLIENT_ID;
+      if (!clientSecret || !clientId) {
+        return NextResponse.json({ success: false, error: "Outlook client credentials are not configured on the server." }, { status: 500 });
+      }
+      const response = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          code,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code"
+        })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        return NextResponse.json({ success: false, error: `Outlook token exchange failed: ${errorText}` }, { status: 400 });
+      }
+      tokenPayload = await response.json();
+    } else if (provider === "whatsapp") {
+      const waToken = process.env.WHATSAPP_ACCESS_TOKEN;
+      const waPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+      if (!waToken || !waPhoneId) {
+        return NextResponse.json({ success: false, error: "WhatsApp credentials are not configured on the server." }, { status: 500 });
+      }
+      tokenPayload = {
+        access_token: waToken,
+        refresh_token: "permanent_token",
+        expires_in: 315360000
+      };
+      accountId = waPhoneId;
+      accountName = `WhatsApp Business API (${waPhoneId})`;
+    } else if (provider === "telegram") {
+      const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+      if (!tgToken) {
+        return NextResponse.json({ success: false, error: "Telegram Bot Token is not configured on the server." }, { status: 500 });
+      }
+      tokenPayload = {
+        access_token: tgToken,
+        refresh_token: "permanent_token",
+        expires_in: 315360000
+      };
+      accountId = "telegram_bot";
+      accountName = "Telegram Bot Integration";
+
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${tgToken}/getMe`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.result) {
+            accountId = String(data.result.id);
+            accountName = `@${data.result.username} (${data.result.first_name})`;
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch Telegram bot info:", err);
+      }
+    }
+
+    if (!tokenPayload || !tokenPayload.access_token) {
+      return NextResponse.json({ success: false, error: "Failed to obtain token from provider." }, { status: 400 });
+    }
+
+    // Retrieve details for OAuth integrations
+    if (tokenPayload.access_token && provider !== "whatsapp" && provider !== "telegram") {
       if (provider === "google") {
         try {
           const userResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
@@ -152,85 +199,59 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
       }
     }
 
-    // Securely upsert credentials to Supabase or simulated mock store
+    // Write credentials to Supabase
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey || supabaseUrl.includes("your_supabase_url")) {
+      return NextResponse.json({ success: false, error: "Supabase connection parameters are not configured on the server." }, { status: 500 });
+    }
+
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let resolvedOrgId = org_id;
+    if (!uuidRegex.test(resolvedOrgId)) {
+      const { data: orgs } = await supabase.from("organizations").select("id").limit(1);
+      if (orgs && orgs.length > 0) {
+        resolvedOrgId = orgs[0].id;
+      } else {
+        const { data: newOrg } = await supabase.from("organizations").insert({
+          name: "Default Organization",
+          slug: `default-org-${Math.floor(Math.random() * 1000)}`,
+          plan: "free"
+        }).select("id").single();
+        if (newOrg) {
+          resolvedOrgId = newOrg.id;
+        }
+      }
+    }
+
+    if (!uuidRegex.test(resolvedOrgId)) {
+      return NextResponse.json({ success: false, error: "Invalid organization ID formatting." }, { status: 500 });
+    }
 
     const expiryTime = tokenPayload.expires_in 
       ? new Date(Date.now() + tokenPayload.expires_in * 1000).toISOString()
       : null;
 
-    const isSupabaseConfigured = !!(
-      supabaseUrl &&
-      supabaseUrl.startsWith("http") &&
-      supabaseKey &&
-      supabaseKey !== "your_supabase_service_role_key"
-    );
+    const { error: upsertError } = await supabase.from("user_integrations").upsert({
+      org_id: resolvedOrgId,
+      provider,
+      account_id: accountId,
+      account_name: accountName,
+      access_token: tokenPayload.access_token,
+      refresh_token: tokenPayload.refresh_token || null,
+      token_expires_at: expiryTime,
+      is_active: true,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "org_id,provider,account_id" });
 
-    if (isSupabaseConfigured) {
-      try {
-        const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(supabaseUrl!, supabaseKey!);
-
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        let resolvedOrgId = org_id;
-        if (!uuidRegex.test(resolvedOrgId)) {
-          const { data: orgs } = await supabase.from("organizations").select("id").limit(1);
-          if (orgs && orgs.length > 0) {
-            resolvedOrgId = orgs[0].id;
-          } else {
-            const { data: newOrg } = await supabase.from("organizations").insert({
-              name: "Default Organization",
-              slug: `default-org-${Math.floor(Math.random() * 1000)}`,
-              plan: "free"
-            }).select("id").single();
-            if (newOrg) {
-              resolvedOrgId = newOrg.id;
-            }
-          }
-        }
-
-        if (uuidRegex.test(resolvedOrgId)) {
-          await supabase.from("user_integrations").upsert({
-            org_id: resolvedOrgId,
-            provider,
-            account_id: accountId,
-            account_name: accountName,
-            access_token: tokenPayload.access_token,
-            refresh_token: tokenPayload.refresh_token || null,
-            token_expires_at: expiryTime,
-            is_active: true,
-            updated_at: new Date().toISOString()
-          }, { onConflict: "org_id,provider,account_id" });
-        }
-
-      } catch (e) {
-        console.error("Failed to write token callback to database:", e);
-      }
-    } else {
-      // Supabase not configured: synchronize with the local in-memory mock database
-      try {
-        await fetch(`${origin}/api/integrations`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            org_id,
-            provider,
-            account_id: accountId,
-            credentials: {
-              access_token: tokenPayload.access_token,
-              refresh_token: tokenPayload.refresh_token || null,
-              expires_at: expiryTime
-            }
-          })
-        });
-        console.log(`[OAuth Callback] Synchronized ${provider} to in-memory mock integration store.`);
-      } catch (e) {
-        console.error("[OAuth Callback] Failed to write mock integration to database:", e);
-      }
+    if (upsertError) {
+      return NextResponse.json({ success: false, error: `Failed to save integration: ${upsertError.message}` }, { status: 500 });
     }
 
-    // Redirect user back to the CRM front-end with active connection triggers
     return NextResponse.redirect(`${origin}/?connected=${provider}&success=true`);
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
