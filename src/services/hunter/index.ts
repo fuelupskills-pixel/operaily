@@ -36,24 +36,38 @@ export class HunterService {
     const isDeepSearch = params.deepSearch === true;
 
     // Phase 1: Fan-out search across all providers
-    onProgress?.({ phase: "searching", source: "apollo", message: "Querying Apollo.io API...", percent: 10 });
-    const apolloResults = await this.apollo.search({ industry, country, titles, limit });
+    let apolloResults: RawLead[] = [];
+    try {
+      onProgress?.({ phase: "searching", source: "apollo", message: "Querying Apollo.io API...", percent: 10 });
+      apolloResults = await this.apollo.search({ industry, country, titles, limit });
+    } catch (e) { console.warn("[Hunter] Apollo provider failed/skipped:", e); }
 
-    onProgress?.({ phase: "searching", source: "linkedin", message: "Scanning LinkedIn Sales Navigator...", percent: 25 });
-    const linkedinResults = await this.linkedin.search({ industry, country, titles, limit });
+    let linkedinResults: RawLead[] = [];
+    try {
+      onProgress?.({ phase: "searching", source: "linkedin", message: "Scanning LinkedIn Sales Navigator...", percent: 25 });
+      linkedinResults = await this.linkedin.search({ industry, country, titles, limit });
+    } catch (e) { console.warn("[Hunter] LinkedIn provider failed/skipped:", e); }
 
-    onProgress?.({ phase: "searching", source: "web", message: "Crawling web directories & Google Maps...", percent: 40 });
-    const webResults = await this.webScraper.search({ industry, country, limit });
+    let webResults: RawLead[] = [];
+    try {
+      onProgress?.({ phase: "searching", source: "web", message: "Crawling web directories & Google Maps...", percent: 40 });
+      webResults = await this.webScraper.search({ industry, country, limit });
+    } catch (e) { console.warn("[Hunter] WebScraper provider failed/skipped:", e); }
 
-    onProgress?.({ phase: "searching", source: "web", message: "Syncing catalogs from IndiaMART, Justdial, TradeIndia & Alibaba...", percent: 45 });
-    const b2bResults = await this.b2bDirectories.search({ industry, country, limit });
+    let b2bResults: RawLead[] = [];
+    try {
+      onProgress?.({ phase: "searching", source: "web", message: "Syncing catalogs from IndiaMART, Justdial, TradeIndia & Alibaba...", percent: 45 });
+      b2bResults = await this.b2bDirectories.search({ industry, country, limit });
+    } catch (e) { console.warn("[Hunter] B2B Directories failed/skipped:", e); }
 
     // Phase 1.5: Deep Search — actual internet search
     let deepResults: RawLead[] = [];
     if (isDeepSearch) {
-      onProgress?.({ phase: "searching", source: "deep", message: "🌐 Deep searching internet for real companies...", percent: 50 });
-      deepResults = await this.deepSearch.search({ industry, country, limit });
-      onProgress?.({ phase: "searching", source: "deep", message: `Deep search found ${deepResults.length} companies from the web`, percent: 55 });
+      try {
+        onProgress?.({ phase: "searching", source: "deep", message: "🌐 Deep searching internet for real companies...", percent: 50 });
+        deepResults = await this.deepSearch.search({ industry, country, limit });
+        onProgress?.({ phase: "searching", source: "deep", message: `Deep search found ${deepResults.length} companies from the web`, percent: 55 });
+      } catch (e) { console.warn("[Hunter] DeepSearch provider failed/skipped:", e); }
     }
 
     // Phase 2: Merge all raw leads

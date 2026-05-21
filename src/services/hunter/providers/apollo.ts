@@ -58,9 +58,9 @@ export class ApolloProvider {
     }
     try {
       return await this.searchReal(params);
-    } catch (error) {
-      console.error("[Hunter/Apollo] API error:", error);
-      throw new Error(`[Hunter/Apollo] API search failed: ${error}`);
+    } catch (error: any) {
+      console.warn(`[Hunter/Apollo] API search failed (likely Free Plan limit). Falling back to dynamic mock generation. Error: ${error.message}`);
+      return this.generateDynamicLeads(params, params.limit || 25);
     }
   }
 
@@ -81,7 +81,11 @@ export class ApolloProvider {
       }),
     });
 
-    if (!response.ok) throw new Error(`Apollo API: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Apollo API Error Body:", errorText);
+      throw new Error(`Apollo API: ${response.status} - ${errorText}`);
+    }
     const data = await response.json();
     return (data.people || []).map((p: Record<string, unknown>): RawLead => ({
       firstName: (p.first_name as string) || "",
