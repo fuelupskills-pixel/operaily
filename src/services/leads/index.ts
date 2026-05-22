@@ -156,6 +156,11 @@ export class LeadService {
    * Create a single lead
    */
   async create(input: LeadInput, orgId: string = "demo-org"): Promise<LeadRecord> {
+    const currentCount = await this.getCount(orgId);
+    if (currentCount >= 100) {
+      throw new Error("Free version allows a maximum of 100 leads. Please upgrade your subscription to add more leads.");
+    }
+
     if (isSupabaseConfigured()) {
       const supabase = createServerClient();
       const uuidOrgId = await getOrResolveOrgUuid(supabase, orgId);
@@ -195,6 +200,11 @@ export class LeadService {
    * Batch create leads (for Hunter import)
    */
   async createBatch(inputs: LeadInput[], orgId: string = "demo-org"): Promise<LeadRecord[]> {
+    const currentCount = await this.getCount(orgId);
+    if (currentCount + inputs.length > 100) {
+      throw new Error(`Free version allows a maximum of 100 leads. You currently have ${currentCount} leads and are trying to add ${inputs.length} more.`);
+    }
+
     if (isSupabaseConfigured()) {
       const supabase = createServerClient();
       const uuidOrgId = await getOrResolveOrgUuid(supabase, orgId);

@@ -11,6 +11,7 @@ interface AuthPageProps {
 export default function AuthPage({ initialMode = "login", onBack, isDemoMode }: AuthPageProps) {
   const { login, signUp, loginWithSocial } = useAuth();
   
+  const [showDemoWarning, setShowDemoWarning] = useState(isDemoMode);
   const [authMode, setAuthMode] = useState<"login" | "signup">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -97,7 +98,7 @@ export default function AuthPage({ initialMode = "login", onBack, isDemoMode }: 
     }
   };
 
-  if (isDemoMode) {
+  if (showDemoWarning) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
         {/* Ambient Glows */}
@@ -164,14 +165,12 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here`}
             >
               Verify Configuration
             </button>
-            <a
-              href="https://supabase.com/docs"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => setShowDemoWarning(false)}
               className="flex-1 py-2.5 text-xs font-semibold rounded-lg bg-surface hover:bg-surface-hover border border-border/40 text-muted-foreground hover:text-white transition-all text-center cursor-pointer"
             >
-              Supabase Docs
-            </a>
+              Continue in Demo Mode
+            </button>
           </div>
         </div>
       </div>
