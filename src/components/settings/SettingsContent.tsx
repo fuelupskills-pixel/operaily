@@ -143,7 +143,12 @@ export default function SettingsContent() {
       profile, userProfile, socials, waNumber, waBusinessName, emailAddress, emailDisplayName, callingNumber, callerIdName, calendarLink, apiKeys, team
     };
     localStorage.setItem("omni_settings", JSON.stringify(settingsToSave));
+    
+    // Dispatch a custom event so other components (like TopBar, Sidebar) can update immediately
+    window.dispatchEvent(new Event("omni_settings_updated"));
+
     setSaved(true);
+    setIsEditingProfile(false);
     setTimeout(() => setSaved(false), 2000);
   };
 

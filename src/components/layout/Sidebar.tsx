@@ -50,6 +50,26 @@ const bottomItems = [
 export default function Sidebar() {
   const { isCollapsed, toggle, activeSection, setActiveSection } = useSidebar();
   const { logoutAndRevoke } = useAuth();
+  
+  const [companyName, setCompanyName] = React.useState("OperAIly");
+
+  React.useEffect(() => {
+    const loadSettings = () => {
+      try {
+        const saved = localStorage.getItem("omni_settings");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.profile?.companyName) {
+            setCompanyName(parsed.profile.companyName);
+          }
+        }
+      } catch (e) {}
+    };
+    
+    loadSettings();
+    window.addEventListener("omni_settings_updated", loadSettings);
+    return () => window.removeEventListener("omni_settings_updated", loadSettings);
+  }, []);
 
   return (
     <aside
@@ -64,7 +84,7 @@ export default function Sidebar() {
         </div>
         {!isCollapsed && (
           <div className="animate-fade-in">
-            <h1 className="text-sm font-bold tracking-tight gradient-text">OperAIly</h1>
+            <h1 className="text-sm font-bold tracking-tight gradient-text truncate max-w-[170px]">{companyName}</h1>
             <p className="text-[10px] text-muted-foreground font-semibold tracking-wider">AI Operations CRM</p>
           </div>
         )}

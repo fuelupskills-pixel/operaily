@@ -11,6 +11,25 @@ export default function TopBar() {
   const { isCollapsed, setActiveSection } = useSidebar();
   const [showProfile, setShowProfile] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [userProfile, setUserProfile] = useState({ firstName: "Operator", lastName: "Admin", email: "admin@operaily.com" });
+
+  useEffect(() => {
+    const loadSettings = () => {
+      try {
+        const saved = localStorage.getItem("omni_settings");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.userProfile) {
+            setUserProfile(parsed.userProfile);
+          }
+        }
+      } catch (e) {}
+    };
+    
+    loadSettings();
+    window.addEventListener("omni_settings_updated", loadSettings);
+    return () => window.removeEventListener("omni_settings_updated", loadSettings);
+  }, []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -71,7 +90,7 @@ export default function TopBar() {
             className="flex items-center gap-2 ml-1 group"
           >
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
-              OP
+              {userProfile.firstName?.[0]}{userProfile.lastName?.[0]}
             </div>
             <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${showProfile ? "rotate-180" : ""}`} />
           </button>
@@ -81,10 +100,12 @@ export default function TopBar() {
               {/* Profile Header */}
               <div className="p-4 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-sm font-bold">OP</div>
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-sm font-bold">
+                    {userProfile.firstName?.[0]}{userProfile.lastName?.[0]}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">Operator Admin</p>
-                    <p className="text-[10px] text-muted-foreground truncate">admin@operaily.com</p>
+                    <p className="text-sm font-semibold truncate">{userProfile.firstName} {userProfile.lastName}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{userProfile.email}</p>
                     <div className="flex items-center gap-1 mt-0.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-success" />
                       <span className="text-[9px] text-success font-medium">Online</span>

@@ -5,21 +5,32 @@ import { SidebarProvider, useSidebar } from "@/components/providers/SidebarProvi
 import { AuthProvider, useAuth } from "@/components/providers/AuthProvider";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
-import DashboardContent from "@/components/dashboard/DashboardContent";
-import WorkforceDashboard from "@/components/dashboard/WorkforceDashboard";
-import ApprovalCenter from "@/components/dashboard/ApprovalCenter";
-import HunterContent from "@/components/hunter/HunterContent";
-import LeadsContent from "@/components/leads/LeadsContent";
-import CanvasWorkflow from "@/components/workflows/CanvasWorkflow";
-import ConversationsContent from "@/components/conversations/ConversationsContent";
-import AnalyticsContent from "@/components/analytics/AnalyticsContent";
-import CampaignsContent from "@/components/campaigns/CampaignsContent";
-import CalendarContent from "@/components/calendar/CalendarContent";
-import SettingsContent from "@/components/settings/SettingsContent";
-import BillingContent from "@/components/billing/BillingContent";
-import VideoContent from "@/components/video/VideoContent";
-import AgencyContent from "@/components/agency/AgencyContent";
-import SellerContent from "@/components/seller/SellerContent";
+import dynamic from "next/dynamic";
+
+const LoadingFallback = () => (
+  <div className="flex-1 flex items-center justify-center p-12 min-h-[50vh]">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+      <p className="text-xs text-muted-foreground animate-pulse">Loading module...</p>
+    </div>
+  </div>
+);
+
+const DashboardContent = dynamic(() => import("@/components/dashboard/DashboardContent"), { loading: LoadingFallback });
+const WorkforceDashboard = dynamic(() => import("@/components/dashboard/WorkforceDashboard"), { loading: LoadingFallback });
+const ApprovalCenter = dynamic(() => import("@/components/dashboard/ApprovalCenter"), { loading: LoadingFallback });
+const HunterContent = dynamic(() => import("@/components/hunter/HunterContent"), { loading: LoadingFallback });
+const LeadsContent = dynamic(() => import("@/components/leads/LeadsContent"), { loading: LoadingFallback });
+const CanvasWorkflow = dynamic(() => import("@/components/workflows/CanvasWorkflow"), { loading: LoadingFallback });
+const ConversationsContent = dynamic(() => import("@/components/conversations/ConversationsContent"), { loading: LoadingFallback });
+const AnalyticsContent = dynamic(() => import("@/components/analytics/AnalyticsContent"), { loading: LoadingFallback });
+const CampaignsContent = dynamic(() => import("@/components/campaigns/CampaignsContent"), { loading: LoadingFallback });
+const CalendarContent = dynamic(() => import("@/components/calendar/CalendarContent"), { loading: LoadingFallback });
+const SettingsContent = dynamic(() => import("@/components/settings/SettingsContent"), { loading: LoadingFallback });
+const BillingContent = dynamic(() => import("@/components/billing/BillingContent"), { loading: LoadingFallback });
+const VideoContent = dynamic(() => import("@/components/video/VideoContent"), { loading: LoadingFallback });
+const AgencyContent = dynamic(() => import("@/components/agency/AgencyContent"), { loading: LoadingFallback });
+const SellerContent = dynamic(() => import("@/components/seller/SellerContent"), { loading: LoadingFallback });
 import { Zap, ShieldAlert, Key, Mail, Lock, User, Building, AlertCircle, Loader2, CheckCircle2, ChevronRight } from "lucide-react";
 
 function AppContent() {
