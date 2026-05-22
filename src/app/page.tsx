@@ -183,29 +183,8 @@ function AppContent() {
     }
   };
 
-  // Loading Session Gate Screen
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden">
-        {/* Glow Effects */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/10 blur-[100px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-accent/10 blur-[100px]" />
-        
-        <div className="relative flex flex-col items-center gap-4 z-10">
-          <div className="relative w-16 h-16 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <Zap className="w-6 h-6 text-primary animate-pulse" />
-          </div>
-          <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase animate-pulse">
-            OperAIly Secure Gatekeeper Verifying Session...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Premium Sign-In Gate Screen
-  if (!isAuthenticated) {
+  if (!isAuthenticated || isLoading) {
     if (isDemoMode) {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
