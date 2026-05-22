@@ -139,9 +139,36 @@ export default function SettingsContent() {
   const [adAccounts, setAdAccounts] = useState(initialAdAccounts);
 
   const handleSave = () => {
+    const settingsToSave = {
+      profile, userProfile, socials, waNumber, waBusinessName, emailAddress, emailDisplayName, callingNumber, callerIdName, calendarLink, apiKeys, team
+    };
+    localStorage.setItem("omni_settings", JSON.stringify(settingsToSave));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
+  React.useEffect(() => {
+    const savedSettings = localStorage.getItem("omni_settings");
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        if (parsed.profile) setProfile(parsed.profile);
+        if (parsed.userProfile) setUserProfile(parsed.userProfile);
+        if (parsed.socials) setSocials(parsed.socials);
+        if (parsed.waNumber) setWaNumber(parsed.waNumber);
+        if (parsed.waBusinessName) setWaBusinessName(parsed.waBusinessName);
+        if (parsed.emailAddress) setEmailAddress(parsed.emailAddress);
+        if (parsed.emailDisplayName) setEmailDisplayName(parsed.emailDisplayName);
+        if (parsed.callingNumber) setCallingNumber(parsed.callingNumber);
+        if (parsed.callerIdName) setCallerIdName(parsed.callerIdName);
+        if (parsed.calendarLink) setCalendarLink(parsed.calendarLink);
+        if (parsed.apiKeys) setApiKeys(parsed.apiKeys);
+        if (parsed.team) setTeam(parsed.team);
+      } catch (e) {
+        console.error("Failed to load settings", e);
+      }
+    }
+  }, []);
 
   const handleInvite = () => {
     if (!inviteEmail) return;
