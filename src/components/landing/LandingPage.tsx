@@ -1,11 +1,70 @@
-import React from "react";
-import { Zap, Bot, Brain, Target, Workflow, ChevronRight, CheckCircle2, Shield, Zap as ZapIcon, LineChart, Globe, Mail } from "lucide-react";
+import React, { useState } from "react";
+import { Zap, Bot, Brain, Target, Workflow, ChevronRight, CheckCircle2, Shield, Zap as ZapIcon, LineChart, Globe, Mail, Phone, Calendar, Clock, Loader2 } from "lucide-react";
 
 interface LandingPageProps {
   onNavigateToAuth: (mode: "login" | "signup") => void;
 }
 
 export default function LandingPage({ onNavigateToAuth }: LandingPageProps) {
+  const [demoForm, setDemoForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    companyName: "",
+    date: "",
+    time: "10:00 AM"
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const scrollToDemo = () => {
+    document.getElementById("demo-form")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleDemoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!demoForm.firstName || !demoForm.email || !demoForm.phone) {
+      setErrorMsg("Please fill in required fields (Name, Email, Phone).");
+      setSubmitStatus("error");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitStatus("idle");
+    setErrorMsg("");
+
+    try {
+      const response = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: demoForm.firstName,
+          lastName: demoForm.lastName,
+          email: demoForm.email,
+          phone: demoForm.phone,
+          companyName: demoForm.companyName,
+          status: "new",
+          source: "landing_page_funnel",
+          personalizedHook: `Requested Demo on ${demoForm.date} at ${demoForm.time}`,
+          leadScore: 80, // High intent
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setSubmitStatus("success");
+      } else {
+        throw new Error(data.error || "Failed to submit demo request");
+      }
+    } catch (err: any) {
+      setSubmitStatus("error");
+      setErrorMsg(err.message || "An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-background overflow-x-hidden selection:bg-primary/30">
       
@@ -64,7 +123,10 @@ export default function LandingPage({ onNavigateToAuth }: LandingPageProps) {
           >
             Start Your Free Trial <ChevronRight className="w-5 h-5" />
           </button>
-          <button className="px-8 py-4 rounded-full glass border border-border hover:bg-surface-hover text-white font-bold text-lg transition-all cursor-pointer">
+          <button 
+            onClick={scrollToDemo}
+            className="px-8 py-4 rounded-full glass border border-border hover:bg-surface-hover text-white font-bold text-lg transition-all cursor-pointer"
+          >
             Book a Demo
           </button>
         </div>
@@ -212,6 +274,159 @@ export default function LandingPage({ onNavigateToAuth }: LandingPageProps) {
               </button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Lead Capture Demo Form */}
+      <section id="demo-form" className="py-24 px-6 md:px-12 bg-surface/30 relative border-t border-border/40">
+        <div className="max-w-4xl mx-auto glass-card p-8 md:p-12 border border-primary/20 shadow-2xl shadow-primary/5 rounded-3xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-[80px] -z-10" />
+          
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold mb-3">See OperAIly in Action</h2>
+            <p className="text-muted-foreground text-sm max-w-xl mx-auto">
+              Book a personalized 1-on-1 walkthrough. We'll show you exactly how our AI agents can automate your specific sales pipeline.
+            </p>
+          </div>
+
+          {submitStatus === "success" ? (
+            <div className="flex flex-col items-center justify-center py-12 animate-fade-in">
+              <div className="w-20 h-20 rounded-full bg-success/20 flex items-center justify-center mb-6">
+                <CheckCircle2 className="w-10 h-10 text-success" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2">Request Received!</h3>
+              <p className="text-muted-foreground text-center max-w-md">
+                We've added you to our priority queue. An OperAIly specialist will reach out shortly to confirm your {demoForm.date} appointment.
+              </p>
+              <button 
+                onClick={() => onNavigateToAuth("signup")}
+                className="mt-8 px-6 py-3 rounded-xl bg-surface border border-border hover:bg-surface-hover font-semibold transition-colors cursor-pointer"
+              >
+                Start Free Trial Instead
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleDemoSubmit} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">First Name</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={demoForm.firstName}
+                    onChange={(e) => setDemoForm({...demoForm, firstName: e.target.value})}
+                    className="w-full bg-input border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                    placeholder="John"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Last Name</label>
+                  <input 
+                    type="text" 
+                    value={demoForm.lastName}
+                    onChange={(e) => setDemoForm({...demoForm, lastName: e.target.value})}
+                    className="w-full bg-input border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Work Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input 
+                      type="email" 
+                      required
+                      value={demoForm.email}
+                      onChange={(e) => setDemoForm({...demoForm, email: e.target.value})}
+                      className="w-full bg-input border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                      placeholder="john@company.com"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input 
+                      type="tel" 
+                      required
+                      value={demoForm.phone}
+                      onChange={(e) => setDemoForm({...demoForm, phone: e.target.value})}
+                      className="w-full bg-input border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                      placeholder="+1 (555) 000-0000"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Company Name</label>
+                <input 
+                  type="text" 
+                  value={demoForm.companyName}
+                  onChange={(e) => setDemoForm({...demoForm, companyName: e.target.value})}
+                  className="w-full bg-input border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                  placeholder="Acme Corp"
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Preferred Date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input 
+                      type="date" 
+                      required
+                      value={demoForm.date}
+                      onChange={(e) => setDemoForm({...demoForm, date: e.target.value})}
+                      className="w-full bg-input border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors [color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Preferred Time</label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <select
+                      value={demoForm.time}
+                      onChange={(e) => setDemoForm({...demoForm, time: e.target.value})}
+                      className="w-full bg-input border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors appearance-none"
+                    >
+                      <option>09:00 AM</option>
+                      <option>10:00 AM</option>
+                      <option>11:00 AM</option>
+                      <option>01:00 PM</option>
+                      <option>02:00 PM</option>
+                      <option>03:00 PM</option>
+                      <option>04:00 PM</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {submitStatus === "error" && (
+                <div className="p-3 rounded-lg bg-danger/10 border border-danger/20 text-danger text-xs flex items-center gap-2">
+                  <ZapIcon className="w-4 h-4 shrink-0" /> {errorMsg}
+                </div>
+              )}
+
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold hover:shadow-[0_0_20px_rgba(var(--primary),0.3)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Submitting Request...</>
+                ) : (
+                  <><Calendar className="w-5 h-5" /> Schedule Demo</>
+                )}
+              </button>
+            </form>
+          )}
         </div>
       </section>
 
