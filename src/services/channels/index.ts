@@ -1,139 +1,135 @@
 // OMNI-SIGMA 360 — Omni-Channel Service
 // Unified interface to WhatsApp, Email, SMS, and AI Voice
-// Always uses real API endpoints and returns errors if keys are missing
+// Uses Zavu Unified Messaging API for production-ready communications
 
 import type { ChannelMessage, ChannelResponse } from "../workflows/types";
+import Zavudev from '@zavudev/sdk';
 
-// ─── WhatsApp (Meta Cloud API) ────────────────────────────────
-const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
-const WA_PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
+// Initialize Zavu Client
+let zavu: Zavudev | null = null;
 
+function getZavuClient(): Zavudev {
+  if (!zavu) {
+    if (!process.env.ZAVUDEV_API_KEY) {
+      console.warn("ZAVUDEV_API_KEY is missing. Messaging features may fail.");
+    }
+    zavu = new Zavudev({ apiKey: process.env.ZAVUDEV_API_KEY || "dummy_key" });
+  }
+  return zavu;
+}
+
+// ─── WhatsApp ──────────────────────────────────────────────────
 async function sendWhatsApp(msg: ChannelMessage): Promise<ChannelResponse> {
-  if (!WA_TOKEN || !WA_PHONE_ID || WA_TOKEN === "your_whatsapp_token") {
-    return { success: false, messageId: null, provider: "meta", status: "failed", error: "WhatsApp credentials are not configured in environment variables." };
+  if (!process.env.ZAVUDEV_API_KEY) {
+    return { success: false, messageId: null, provider: "zavu", status: "failed", error: "ZAVUDEV_API_KEY not configured." };
   }
 
   try {
-    const res = await fetch(`https://graph.facebook.com/v18.0/${WA_PHONE_ID}/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: msg.to.replace(/\D/g, ""),
-        type: msg.mediaUrl ? "video" : "text",
-        ...(msg.mediaUrl
-          ? { video: { link: msg.mediaUrl, caption: msg.content } }
-          : { text: { body: msg.content } }),
-      }),
-    });
-    const data = await res.json();
-    return {
-      success: res.ok,
-      messageId: data.messages?.[0]?.id || null,
-      provider: "meta",
-      status: res.ok ? "sent" : "failed",
-      error: res.ok ? null : JSON.stringify(data.error),
+    const client = getZavuClient();
+    const payload: any = {
+      to: msg.to.replace(/\D/g, ""),
+      channel: "whatsapp",
     };
-  } catch (err) {
-    return { success: false, messageId: null, provider: "meta", status: "failed", error: String(err) };
+
+    if (msg.mediaUrl) {
+      payload.messageType = "video";
+      payload.text = msg.content; // Caption
+      payload.content = { mediaUrl: msg.mediaUrl };
+    } else {
+      payload.text = msg.content;
+    }
+
+    const result = await client.messages.send(payload);
+    
+    return {
+      success: true,
+      messageId: result.message.id,
+      provider: "zavu",
+      status: "sent",
+      error: null,
+    };
+  } catch (err: any) {
+    return { success: false, messageId: null, provider: "zavu", status: "failed", error: err.message || String(err) };
   }
 }
 
-// ─── Email (Resend) ───────────────────────────────────────────
-const RESEND_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM_ADDRESS || "noreply@omnisigma.ai";
-
+// ─── Email ────────────────────────────────────────────────────
 async function sendEmail(msg: ChannelMessage): Promise<ChannelResponse> {
-  if (!RESEND_KEY || RESEND_KEY === "your_resend_api_key") {
-    return { success: false, messageId: null, provider: "resend", status: "failed", error: "Resend Email API Key is not configured." };
+  if (!process.env.ZAVUDEV_API_KEY) {
+    return { success: false, messageId: null, provider: "zavu", status: "failed", error: "ZAVUDEV_API_KEY not configured." };
   }
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: EMAIL_FROM,
-        to: [msg.to],
-        subject: (msg.metadata?.subject as string) || "Following up on our conversation",
-        html: msg.content,
-      }),
+    const client = getZavuClient();
+    const result = await client.messages.send({
+      to: msg.to,
+      channel: "email",
+      subject: (msg.metadata?.subject as string) || "Following up on our conversation",
+      htmlBody: msg.content,
+      text: msg.content.replace(/<[^>]+>/g, ''), // Strip HTML for plain text
     });
-    const data = await res.json();
+
     return {
-      success: res.ok,
-      messageId: data.id || null,
-      provider: "resend",
-      status: res.ok ? "sent" : "failed",
-      error: res.ok ? null : JSON.stringify(data),
+      success: true,
+      messageId: result.message.id,
+      provider: "zavu",
+      status: "sent",
+      error: null,
     };
-  } catch (err) {
-    return { success: false, messageId: null, provider: "resend", status: "failed", error: String(err) };
+  } catch (err: any) {
+    return { success: false, messageId: null, provider: "zavu", status: "failed", error: err.message || String(err) };
   }
 }
 
-// ─── SMS (Twilio) ─────────────────────────────────────────────
-const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_FROM = process.env.TWILIO_PHONE_NUMBER;
-
+// ─── SMS ──────────────────────────────────────────────────────
 async function sendSMS(msg: ChannelMessage): Promise<ChannelResponse> {
-  if (!TWILIO_SID || !TWILIO_TOKEN || TWILIO_SID === "your_twilio_sid") {
-    return { success: false, messageId: null, provider: "twilio", status: "failed", error: "Twilio credentials are not configured." };
+  if (!process.env.ZAVUDEV_API_KEY) {
+    return { success: false, messageId: null, provider: "zavu", status: "failed", error: "ZAVUDEV_API_KEY not configured." };
   }
 
   try {
-    const auth = Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString("base64");
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
-      method: "POST",
-      headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ To: msg.to, From: TWILIO_FROM!, Body: msg.content }),
+    const client = getZavuClient();
+    const result = await client.messages.send({
+      to: msg.to,
+      channel: "sms",
+      text: msg.content,
     });
-    const data = await res.json();
+
     return {
-      success: res.ok,
-      messageId: data.sid || null,
-      provider: "twilio",
-      status: res.ok ? "sent" : "failed",
-      error: res.ok ? null : data.message,
+      success: true,
+      messageId: result.message.id,
+      provider: "zavu",
+      status: "sent",
+      error: null,
     };
-  } catch (err) {
-    return { success: false, messageId: null, provider: "twilio", status: "failed", error: String(err) };
+  } catch (err: any) {
+    return { success: false, messageId: null, provider: "zavu", status: "failed", error: err.message || String(err) };
   }
 }
 
-// ─── AI Voice Call (Vapi) ─────────────────────────────────────
-const VAPI_KEY = process.env.VAPI_API_KEY;
-
+// ─── AI Voice Call ────────────────────────────────────────────
 async function makeVoiceCall(msg: ChannelMessage): Promise<ChannelResponse> {
-  if (!VAPI_KEY || VAPI_KEY === "your_vapi_api_key") {
-    return { success: false, messageId: null, provider: "vapi", status: "failed", error: "Vapi AI calling API Key is not configured." };
+  if (!process.env.ZAVUDEV_API_KEY) {
+    return { success: false, messageId: null, provider: "zavu", status: "failed", error: "ZAVUDEV_API_KEY not configured." };
   }
 
   try {
-    const res = await fetch("https://api.vapi.ai/call/phone", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${VAPI_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phoneNumberId: msg.metadata?.phoneNumberId,
-        customer: { number: msg.to },
-        assistant: {
-          firstMessage: msg.content,
-          model: { provider: "openai", model: "gpt-4o-mini" },
-          voice: { provider: "11labs", voiceId: "21m00Tcm4TlvDq8ikWAM" },
-        },
-      }),
+    const client = getZavuClient();
+    const result = await client.messages.send({
+      to: msg.to,
+      channel: "voice",
+      text: msg.content,
     });
-    const data = await res.json();
+
     return {
-      success: res.ok,
-      messageId: data.id || null,
-      provider: "vapi",
-      status: res.ok ? "initiated" : "failed",
-      error: res.ok ? null : JSON.stringify(data),
+      success: true,
+      messageId: result.message.id,
+      provider: "zavu",
+      status: "initiated",
+      error: null,
     };
-  } catch (err) {
-    return { success: false, messageId: null, provider: "vapi", status: "failed", error: String(err) };
+  } catch (err: any) {
+    return { success: false, messageId: null, provider: "zavu", status: "failed", error: err.message || String(err) };
   }
 }
 
