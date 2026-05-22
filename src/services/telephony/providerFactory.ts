@@ -11,8 +11,26 @@ class TwilioProvider implements TelephonyProvider {
 
   async makeCall(params: any): Promise<{ success: boolean; callId?: string; error?: string }> {
     if (!this.isConfigured()) return { success: false, error: "Twilio not configured" };
-    // Real implementation would use twilio SDK
-    return { success: true, callId: "CA" + Date.now() };
+    
+    const sid = process.env.TWILIO_ACCOUNT_SID!;
+    const token = process.env.TWILIO_AUTH_TOKEN!;
+    const from = process.env.TWILIO_PHONE_NUMBER!;
+    
+    try {
+      const auth = Buffer.from(`${sid}:${token}`).toString("base64");
+      const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Calls.json`, {
+        method: "POST",
+        headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ To: params.to, From: from, Url: params.webhookUrl || "http://demo.twilio.com/docs/voice.xml" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        return { success: true, callId: data.sid };
+      }
+      return { success: false, error: data.message };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
   }
 }
 

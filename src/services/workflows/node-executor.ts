@@ -36,15 +36,29 @@ const executeDelay: ExecutorFn = async (node) => {
 // ─── Condition Node ───────────────────────────────────────────
 const executeCondition: ExecutorFn = async (node, context) => {
   const check = (node.config.check as string) || "default";
-  // Simulate condition evaluation
-  // In production, this would check real reply status from DB
-  const replyReceived = Math.random() > 0.5; // 50% chance for demo
-  const result = check === "reply_received"
-    ? (replyReceived ? "reply_yes" : "reply_no")
-    : "true";
+  
+  // Real implementation evaluates context
+  let result = "false";
+  
+  if (check === "reply_received") {
+    // Check if context has any recent inbound messages
+    result = context.lastInboundMessage ? "reply_yes" : "reply_no";
+  } else if (check === "has_email") {
+    const lead = context.lead as any || {};
+    result = !!lead.email ? "true" : "false";
+  } else if (check === "has_phone") {
+    const lead = context.lead as any || {};
+    result = !!(lead.phone || lead.whatsapp) ? "true" : "false";
+  } else if (check === "ai_intent_interested") {
+    const intent = String(context.aiIntent || "").toLowerCase();
+    result = intent.includes("interest") || intent.includes("positive") || intent.includes("yes") ? "true" : "false";
+  } else {
+    // Default to true for unknown checks
+    result = "true";
+  }
 
   return {
-    action: `Condition "${check}" → ${result}`,
+    action: `Condition "${check}" evaluated to ${result}`,
     output: { conditionResult: result, check, evaluated: true },
     contextUpdates: { lastCondition: result },
   };
@@ -141,13 +155,10 @@ const executeGenerateVideo: ExecutorFn = async (node, context) => {
   const apiKey = process.env.HEYGEN_API_KEY;
 
   if (!apiKey || apiKey === "your_heygen_api_key") {
-    // Fallback to simulation
-    await new Promise((r) => setTimeout(r, 500));
-    const videoUrl = `https://cdn.omnisigma.ai/videos/intro_${lead.firstName || "lead"}_${Date.now()}.mp4`;
     return {
-      action: `AI video simulated for ${lead.firstName || "lead"} (HeyGen Key not set)`,
-      output: { videoUrl, provider: "heygen_mock", duration: "30s" },
-      contextUpdates: { videoUrl, videoGenerated: true },
+      action: `AI video generation failed (HeyGen Key not configured)`,
+      output: { error: "HeyGen API Key is missing. Configure it in .env.local to generate real videos.", provider: "heygen" },
+      contextUpdates: {},
     };
   }
 
@@ -198,11 +209,10 @@ const executeGenerateVideo: ExecutorFn = async (node, context) => {
     };
   } catch (err) {
     console.error("HeyGen API call failed:", err);
-    const videoUrl = `https://cdn.omnisigma.ai/videos/intro_${lead.firstName || "lead"}_${Date.now()}.mp4`;
     return {
-      action: `AI video generated (HeyGen API call failed fallback)`,
-      output: { videoUrl, error: err instanceof Error ? err.message : String(err), provider: "heygen_fallback" },
-      contextUpdates: { videoUrl, videoGenerated: true },
+      action: `AI video generation failed`,
+      output: { error: err instanceof Error ? err.message : String(err), provider: "heygen" },
+      contextUpdates: {},
     };
   }
 };
@@ -211,17 +221,28 @@ const executeGenerateVideo: ExecutorFn = async (node, context) => {
 const executeGenerateText: ExecutorFn = async (node, context) => {
   const task = (node.config.task as string) || "generate";
   const lead = context.lead as Record<string, unknown> || {};
+  const prompt = (node.config.prompt as string) || `Classify the intent for B2B lead ${lead.companyName || lead.name}.`;
 
-  // Simulate AI intent classification
-  await new Promise((r) => setTimeout(r, 300));
-  const intents = ["interested", "objection", "not_interested"];
-  const intent = intents[Math.floor(Math.random() * 2)]; // Bias toward interested
+  try {
+    const { AIProvider } = await import("@/services/ai/provider");
+    const aiResponse = await AIProvider.generateText({ 
+      prompt: `Task: ${task}\nContext: ${JSON.stringify(context)}\nPrompt: ${prompt}\n\nPlease output only the classification result or generated text, keep it short.`,
+      systemInstruction: "You are an AI automation agent inside a B2B sales workflow. Follow the prompt instructions precisely."
+    });
 
-  return {
-    action: `AI classified intent: ${intent}`,
-    output: { conditionResult: intent, task, intent, confidence: 0.87 },
-    contextUpdates: { aiIntent: intent },
-  };
+    return {
+      action: `AI Generation completed: ${task}`,
+      output: { conditionResult: aiResponse.trim(), task, intent: aiResponse.trim(), confidence: 1.0 },
+      contextUpdates: { aiIntent: aiResponse.trim() },
+    };
+  } catch (err) {
+    console.error("AI Generation failed:", err);
+    return {
+      action: `AI Generation failed: ${task}`,
+      output: { error: String(err) },
+      contextUpdates: {},
+    };
+  }
 };
 
 // ─── Book Meeting ─────────────────────────────────────────────
@@ -231,19 +252,14 @@ const executeBookMeeting: ExecutorFn = async (node, context) => {
   const apiKey = process.env.CALCOM_API_KEY;
 
   if (!apiKey || apiKey === "your_calcom_api_key") {
-    // Fallback to simulation
-    await new Promise((r) => setTimeout(r, 300));
-    const meetingTime = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
     return {
-      action: `Meeting booked with ${lead.fullName || lead.name || "prospect"} for ${new Date(meetingTime).toLocaleDateString()} (Cal.com Key not set)`,
+      action: `Meeting booking failed (Cal.com Key not configured)`,
       output: {
-        meetingBooked: true,
-        meetingTime,
-        duration,
-        meetingLink: `https://cal.com/omnisigma/meeting-${Date.now()}`,
-        provider: "calcom_mock",
+        meetingBooked: false,
+        error: "Cal.com API Key is missing. Configure it in .env.local to book real meetings.",
+        provider: "calcom",
       },
-      contextUpdates: { meetingBooked: true, meetingTime },
+      contextUpdates: {},
     };
   }
 
@@ -332,18 +348,14 @@ const executeBookMeeting: ExecutorFn = async (node, context) => {
     };
   } catch (err) {
     console.error("Cal.com API call failed:", err);
-    const meetingTime = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
     return {
-      action: `Meeting booked (Cal.com API failed fallback)`,
+      action: `Meeting booking failed`,
       output: {
-        meetingBooked: true,
-        meetingTime,
-        duration,
-        meetingLink: `https://cal.com/omnisigma/meeting-${Date.now()}`,
-        provider: "calcom_fallback",
+        meetingBooked: false,
+        provider: "calcom",
         error: err instanceof Error ? err.message : String(err),
       },
-      contextUpdates: { meetingBooked: true, meetingTime },
+      contextUpdates: {},
     };
   }
 };
@@ -359,14 +371,36 @@ const executeUpdateLead: ExecutorFn = async (node, context) => {
 };
 
 // ─── Webhook ──────────────────────────────────────────────────
-const executeWebhook: ExecutorFn = async (node) => {
+const executeWebhook: ExecutorFn = async (node, context) => {
   const url = (node.config.url as string) || "https://example.com/webhook";
-  // In production, this sends actual HTTP request
-  return {
-    action: `Webhook called: ${url}`,
-    output: { url, method: "POST", status: 200 },
-    contextUpdates: {},
-  };
+  const method = (node.config.method as string) || "POST";
+  
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: method !== "GET" ? JSON.stringify({ context, lead: context.lead }) : undefined,
+    });
+    
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      data = await res.text();
+    }
+
+    return {
+      action: `Webhook called: ${url}`,
+      output: { url, method, status: res.status, response: data },
+      contextUpdates: { webhookLastStatus: res.status },
+    };
+  } catch (err) {
+    return {
+      action: `Webhook failed: ${url}`,
+      output: { url, method, error: String(err) },
+      contextUpdates: {},
+    };
+  }
 };
 
 // ─── Executor Registry ───────────────────────────────────────

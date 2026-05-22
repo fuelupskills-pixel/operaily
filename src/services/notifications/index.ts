@@ -1,6 +1,8 @@
 // OMNI-SIGMA 360 — Notification Service
 // Handles WhatsApp, Email and System notifications
 
+import { getChannelService } from "../channels";
+
 export type NotificationChannel = "whatsapp" | "email" | "system";
 
 export interface NotificationPayload {
@@ -12,12 +14,16 @@ export interface NotificationPayload {
 
 export class NotificationService {
   /**
-   * Send a WhatsApp message (Mock implementation)
+   * Send a WhatsApp message via unified ChannelService
    */
   async sendWhatsApp(payload: NotificationPayload): Promise<boolean> {
-    console.log(`[WhatsApp] Sending to ${payload.to}: ${payload.message}`);
-    // In a real implementation, this would call Meta WhatsApp Business API or Twilio
-    return true;
+    const channelService = getChannelService();
+    const result = await channelService.send({
+      channel: "whatsapp",
+      to: payload.to,
+      content: payload.message,
+    });
+    return result.success;
   }
 
   /**
