@@ -129,7 +129,7 @@ export default function CalendarContent() {
             <CalendarDays className="w-8 h-8 text-primary" />
             Calendar
           </h1>
-          <p className="text-muted-foreground mt-1">{totalMeetings} meetings this month • {aiBookedCount} AI-booked</p>
+          <p className="text-muted-foreground mt-1">{totalMeetings} meetings this month - {aiBookedCount} AI-booked</p>
         </div>
         <div className="flex items-center gap-3">
           {isCalendarConnected && (
@@ -272,6 +272,7 @@ export default function CalendarContent() {
             )}
           </div>
         </div>
+      </div>
       )}
 
       {/* New Event Modal */}
