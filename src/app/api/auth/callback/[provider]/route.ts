@@ -151,6 +151,30 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
       } catch (err) {
         console.warn("Failed to fetch Telegram bot info:", err);
       }
+    } else if (provider === "tiktok") {
+      const clientSecret = process.env.TIKTOK_CLIENT_SECRET;
+      const clientKey = process.env.TIKTOK_CLIENT_KEY;
+      if (!clientSecret || !clientKey) {
+        return NextResponse.json({ success: false, error: "TikTok client credentials are not configured on the server." }, { status: 500 });
+      }
+      const response = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_key: clientKey,
+          client_secret: clientSecret,
+          code,
+          grant_type: "authorization_code",
+          redirect_uri: redirectUri
+        })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        return NextResponse.json({ success: false, error: `TikTok token exchange failed: ${errorText}` }, { status: 400 });
+      }
+      tokenPayload = await response.json();
+      accountId = `tiktok_${Date.now()}`;
+      accountName = "TikTok Integration";
     }
 
     if (!tokenPayload || !tokenPayload.access_token) {

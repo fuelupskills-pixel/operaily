@@ -24,6 +24,8 @@ import {
   ShieldAlert,
   LogOut,
   ShoppingBag,
+  Plug,
+  ShieldCheck,
 } from "lucide-react";
 
 const navItems = [
@@ -35,6 +37,7 @@ const navItems = [
   { id: "workflows", label: "Automations", icon: Workflow },
   { id: "agency", label: "AI Agency", icon: Globe, badge: "PRO" },
   { id: "seller", label: "Seller Platform", icon: ShoppingBag, badge: "NEW" },
+  { id: "integrations", label: "Integrations", icon: Plug },
   { id: "conversations", label: "Conversations", icon: MessageSquare, badge: "3" },
   { id: "campaigns", label: "Ad Campaigns", icon: Megaphone },
   { id: "video", label: "Video Studio", icon: Video, badge: "AI" },
@@ -45,6 +48,7 @@ const navItems = [
 
 const bottomItems = [
   { id: "settings", label: "Settings", icon: Settings },
+  { id: "admin", label: "Admin Setup", icon: ShieldCheck, badge: "CONFIG" },
 ];
 
 export default function Sidebar() {
@@ -160,6 +164,11 @@ export default function Sidebar() {
             >
               <Icon className="w-[18px] h-[18px] shrink-0" />
               {!isCollapsed && <span className="animate-fade-in">{item.label}</span>}
+              {!isCollapsed && item.badge && (
+                <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-warning/20 text-warning animate-fade-in border border-warning/30">
+                  {item.badge}
+                </span>
+              )}
             </button>
           );
         })}

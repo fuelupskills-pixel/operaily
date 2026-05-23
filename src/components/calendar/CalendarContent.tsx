@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, Sparkles, X, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, Sparkles, X, Check, CalendarDays, Mail } from "lucide-react";
 
 interface CalEvent {
   id: string;
@@ -61,6 +61,7 @@ export default function CalendarContent() {
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
 
   const [events, setEvents] = useState<Record<number, CalEvent[]>>(() => generateEvents(year, month));
+  const [isCalendarConnected, setIsCalendarConnected] = useState(false);
   
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -121,24 +122,72 @@ export default function CalendarContent() {
   const aiBookedCount = Object.values(events).flat().filter((e) => e.aiBooked).length;
 
   return (
-    <div className="space-y-6 relative">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 relative animate-fade-in">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight"><span className="gradient-text">Calendar</span> 📅</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">{totalMeetings} meetings this month • {aiBookedCount} AI-booked</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+            <CalendarDays className="w-8 h-8 text-primary" />
+            Calendar
+          </h1>
+          <p className="text-muted-foreground mt-1">{totalMeetings} meetings this month • {aiBookedCount} AI-booked</p>
         </div>
-        <button 
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/20 text-white font-bold text-xs transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> 
-          <span>New Meeting</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {isCalendarConnected && (
+            <button 
+              onClick={() => setIsCalendarConnected(false)}
+              className="px-4 py-2.5 rounded-xl border border-danger/20 text-danger hover:bg-danger/10 transition-colors text-sm font-semibold"
+            >
+              Disconnect
+            </button>
+          )}
+          <button 
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-semibold text-sm cursor-pointer shadow-lg shadow-primary/20"
+          >
+            <Plus className="w-4 h-4" /> 
+            <span>New Meeting</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Calendar Grid */}
-        <div className="glass-card p-5 lg:col-span-2 border border-border/50">
+      {!isCalendarConnected && (
+        <div className="p-8 rounded-2xl bg-card border border-border flex flex-col items-center justify-center text-center shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+            <CalendarDays className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Connect Your Calendar</h2>
+          <p className="text-muted-foreground max-w-md mb-8">
+            Sync your existing events, automate scheduling with AI, and manage your meetings directly from the CRM.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full justify-center">
+            <a 
+              href="/api/auth/google"
+              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-[#EA4335] text-white hover:opacity-90 transition-opacity font-semibold w-full sm:w-auto justify-center"
+            >
+              <Mail className="w-5 h-5" />
+              Sign in with Google
+            </a>
+            <a 
+              href="/api/auth/outlook"
+              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-[#0078D4] text-white hover:opacity-90 transition-opacity font-semibold w-full sm:w-auto justify-center"
+            >
+              <Mail className="w-5 h-5" />
+              Sign in with Outlook
+            </a>
+            <button 
+              onClick={() => setIsCalendarConnected(true)}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-surface border border-border text-foreground hover:bg-sidebar-hover transition-colors font-semibold w-full sm:w-auto justify-center"
+            >
+              Use Demo Data
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isCalendarConnected && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Calendar Grid */}
+          <div className="glass-card p-5 lg:col-span-2 border border-border/50">
           <div className="flex items-center justify-between mb-4">
             <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-surface-hover text-muted-foreground hover:text-foreground transition-all cursor-pointer"><ChevronLeft className="w-4 h-4" /></button>
             <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">{monthName} {year}</h3>
@@ -223,7 +272,7 @@ export default function CalendarContent() {
             )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* New Event Modal */}
       {showModal && (

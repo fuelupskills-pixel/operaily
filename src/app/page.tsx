@@ -31,6 +31,8 @@ const BillingContent = dynamic(() => import("@/components/billing/BillingContent
 const VideoContent = dynamic(() => import("@/components/video/VideoContent"), { loading: LoadingFallback });
 const AgencyContent = dynamic(() => import("@/components/agency/AgencyContent"), { loading: LoadingFallback });
 const SellerContent = dynamic(() => import("@/components/seller/SellerContent"), { loading: LoadingFallback });
+const IntegrationsContent = dynamic(() => import("@/components/integrations/IntegrationsContent"), { loading: LoadingFallback });
+const AdminSetupContent = dynamic(() => import("@/components/admin/AdminSetupContent"), { loading: LoadingFallback });
 import LandingPage from "@/components/landing/LandingPage";
 import AuthPage from "@/components/auth/AuthPage";
 import { Zap, ShieldAlert, Key, Mail, Lock, User, Building, AlertCircle, Loader2, CheckCircle2, ChevronRight } from "lucide-react";
@@ -97,6 +99,10 @@ function AppContent() {
         return <AgencyContent />;
       case "seller":
         return <SellerContent />;
+      case "integrations":
+        return <IntegrationsContent />;
+      case "admin":
+        return <AdminSetupContent />;
       default:
         return <DashboardContent />;
     }

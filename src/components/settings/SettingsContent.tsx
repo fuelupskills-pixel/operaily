@@ -101,7 +101,6 @@ export default function SettingsContent() {
     whatsappChannel: "https://whatsapp.com/channel/omnisigma",
     telegram: "https://t.me/omnisigma",
   });
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   // Channel config
   const [waNumber, setWaNumber] = useState("+91 98765 43210");
@@ -148,7 +147,6 @@ export default function SettingsContent() {
     window.dispatchEvent(new Event("omni_settings_updated"));
 
     setSaved(true);
-    setIsEditingProfile(false);
     setTimeout(() => setSaved(false), 2000);
   };
 
@@ -248,9 +246,6 @@ export default function SettingsContent() {
                     <h2 className="text-lg font-bold">{profile.companyName}</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">{profile.tagline}</p>
                   </div>
-                  <button onClick={() => setIsEditingProfile(!isEditingProfile)} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${isEditingProfile ? "bg-primary/10 text-primary" : "bg-surface border border-border-subtle hover:border-border"}`}>
-                    <Edit3 className="w-3 h-3" /> {isEditingProfile ? "Editing" : "Edit Profile"}
-                  </button>
                 </div>
                 <div className="flex flex-wrap gap-3 mt-3">
                   <span className="flex items-center gap-1 text-xs text-muted-foreground"><Building2 className="w-3 h-3" /> {profile.industry}</span>
@@ -262,33 +257,31 @@ export default function SettingsContent() {
           </div>
 
           {/* Company Details */}
-          {isEditingProfile && (
-            <div className="glass-card p-5 gradient-border animate-fade-in">
-              <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Building2 className="w-4 h-4 text-primary" /> Company Details</h3>
+          <div className="glass-card p-5 relative z-20">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Building2 className="w-4 h-4 text-primary" /> Company Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Company Name</label>
-                <input value={profile.companyName} onChange={e => setProfile({...profile, companyName: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus" /></div>
-                <div><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Tagline</label>
-                <input value={profile.tagline} onChange={e => setProfile({...profile, tagline: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus" /></div>
-                <div><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Industry</label>
-                <input value={profile.industry} onChange={e => setProfile({...profile, industry: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus" /></div>
-                <div><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Website</label>
-                <input value={profile.website} onChange={e => setProfile({...profile, website: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus" /></div>
-                <div><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Address</label>
-                <input value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus" /></div>
-                <div><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Country</label>
-                <input value={profile.country} onChange={e => setProfile({...profile, country: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus" /></div>
-                <div><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Timezone</label>
-                <input value={profile.timezone} onChange={e => setProfile({...profile, timezone: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus" /></div>
-                <div><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Currency</label>
-                <select value={profile.currency} onChange={e => setProfile({...profile, currency: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm">
+                <div className="relative z-30 pointer-events-auto"><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Company Name</label>
+                <input value={profile.companyName} onChange={e => setProfile({...profile, companyName: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus relative z-40 pointer-events-auto" /></div>
+                <div className="relative z-30 pointer-events-auto"><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Tagline</label>
+                <input value={profile.tagline} onChange={e => setProfile({...profile, tagline: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus relative z-40 pointer-events-auto" /></div>
+                <div className="relative z-30 pointer-events-auto"><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Industry</label>
+                <input value={profile.industry} onChange={e => setProfile({...profile, industry: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus relative z-40 pointer-events-auto" /></div>
+                <div className="relative z-30 pointer-events-auto"><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Website</label>
+                <input value={profile.website} onChange={e => setProfile({...profile, website: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus relative z-40 pointer-events-auto" /></div>
+                <div className="relative z-30 pointer-events-auto"><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Address</label>
+                <input value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus relative z-40 pointer-events-auto" /></div>
+                <div className="relative z-30 pointer-events-auto"><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Country</label>
+                <input value={profile.country} onChange={e => setProfile({...profile, country: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus relative z-40 pointer-events-auto" /></div>
+                <div className="relative z-30 pointer-events-auto"><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Timezone</label>
+                <input value={profile.timezone} onChange={e => setProfile({...profile, timezone: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus relative z-40 pointer-events-auto" /></div>
+                <div className="relative z-30 pointer-events-auto"><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Currency</label>
+                <select value={profile.currency} onChange={e => setProfile({...profile, currency: e.target.value})} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm relative z-40 pointer-events-auto">
                   <option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="INR">INR (₹)</option><option value="AED">AED (د.إ)</option>
                 </select></div>
               </div>
-              <div className="mt-4"><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Company Description</label>
-              <textarea value={profile.description} onChange={e => setProfile({...profile, description: e.target.value})} rows={3} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus resize-none" /></div>
+              <div className="mt-4 relative z-30 pointer-events-auto"><label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Company Description</label>
+              <textarea value={profile.description} onChange={e => setProfile({...profile, description: e.target.value})} rows={3} className="w-full px-4 py-2.5 bg-input border border-input-border rounded-xl text-sm input-focus resize-none relative z-40 pointer-events-auto" /></div>
             </div>
-          )}
 
           {/* User Profile */}
           <div className="glass-card p-5">

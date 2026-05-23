@@ -90,6 +90,20 @@ export async function GET(req: NextRequest, { params }: { params: { provider: st
         return NextResponse.redirect(`${origin}/api/auth/callback/${provider}?code=real_telegram_connection&state=${state}`);
       }
 
+      case "tiktok": {
+        const tiktokClientKey = process.env.TIKTOK_CLIENT_KEY;
+        if (!tiktokClientKey) {
+          return NextResponse.json({ success: false, error: "TikTok OAuth is not configured on the server. Please set TIKTOK_CLIENT_KEY in your environment variables." }, { status: 400 });
+        }
+        authUrl = `https://www.tiktok.com/v2/auth/authorize/?` +
+          `client_key=${tiktokClientKey}` +
+          `&response_type=code` +
+          `&scope=${encodeURIComponent("user.info.basic,video.list,video.upload")}` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&state=${state}`;
+        break;
+      }
+
       default:
         return NextResponse.json({ success: false, error: "Unsupported OAuth provider" }, { status: 400 });
     }
