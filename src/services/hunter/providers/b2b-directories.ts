@@ -11,6 +11,76 @@ export class B2BDirectoriesProvider {
     console.log(`[Hunter/B2B-Directories] Crawling B2B Marketplaces for: "${params.industry}" in ${params.country}`);
     
     const leads: RawLead[] = [];
+    
+    // Attempt real Serper API search for B2B directories if key is present
+    if (params.apiKeys?.serperKey) {
+      try {
+        console.log("[Hunter/B2B-Directories] Using Serper API for directory search...");
+        const queries = [
+          `site:indiamart.com OR site:tradeindia.com OR site:justdial.com ${params.industry} ${params.country} manufacturer supplier`,
+          `site:yellowpages.com OR site:alibaba.com ${params.industry} ${params.country} business directory`
+        ];
+        
+        for (const query of queries) {
+          const res = await fetch("https://google.serper.dev/search", {
+            method: "POST",
+            headers: {
+              "X-API-KEY": params.apiKeys.serperKey,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ q: query, num: 10 })
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            if (data.organic && data.organic.length > 0) {
+              for (const result of data.organic) {
+                // Extremely basic heuristic to convert search results to leads
+                const title = result.title || "";
+                const snippet = result.snippet || "";
+                
+                // Try to extract company name
+                const companyName = title.split("-")[0].split("|")[0].trim();
+                
+                // Try to extract phone
+                const phoneMatch = snippet.match(/\+?\d[\d\s\-().]{7,}/);
+                
+                if (companyName.length > 3) {
+                  leads.push({
+                    firstName: "Contact",
+                    lastName: "Directory",
+                    email: null,
+                    phone: phoneMatch ? phoneMatch[0].trim() : null,
+                    whatsapp: null,
+                    designation: "Supplier",
+                    companyName,
+                    website: result.link || null,
+                    address: null,
+                    city: params.country,
+                    country: params.country,
+                    industry: params.industry,
+                    linkedinUrl: null,
+                    twitterHandle: null,
+                    facebookUrl: null,
+                    source: title.toLowerCase().includes("indiamart") ? "indiamart" 
+                          : title.toLowerCase().includes("tradeindia") ? "tradeindia" 
+                          : "yellow_pages",
+                    sourceId: `serper_${Date.now()}_${leads.length}`,
+                    rawData: { snippet: result.snippet }
+                  });
+                }
+              }
+            }
+          }
+        }
+        
+        if (leads.length > 0) return leads;
+      } catch (err) {
+        console.error("[Hunter/B2B-Directories] Serper API failed, falling back to smart mock generation", err);
+      }
+    }
+    
+    // Fallback Mock Logic
     const count = 4 + Math.floor(Math.random() * 4); // Extract 4-7 rich leads per hunt
     
     for (let i = 0; i < count; i++) {

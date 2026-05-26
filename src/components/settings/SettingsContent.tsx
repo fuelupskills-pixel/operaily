@@ -126,6 +126,9 @@ export default function SettingsContent() {
     deepseekKey: "sk-ds...hidden...xyz",
     memoKey: "sk-memo...hidden...xyz",
     apolloKey: "apo_...hidden...key",
+    firecrawlKey: "fc-...hidden...key",
+    serperKey: "serp_...hidden...key",
+    proxycurlKey: "pc_...hidden...key",
   });
 
   // Team
@@ -551,6 +554,9 @@ export default function SettingsContent() {
             "AI / DeepSeek": [["deepseekKey", "API Key"]],
             "AI / Memo": [["memoKey", "API Key"]],
             "Lead Hunter (Apollo)": [["apolloKey", "API Key"]],
+            "Lead Hunter (Web Crawl / Firecrawl)": [["firecrawlKey", "API Key"]],
+            "Lead Hunter (Directories / Serper)": [["serperKey", "API Key"]],
+            "Lead Hunter (LinkedIn / Proxycurl)": [["proxycurlKey", "API Key"]],
           }).map(([group, keys]) => (
             <div key={group} className="glass-card p-5">
               <h3 className="text-sm font-semibold mb-4">{group}</h3>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Zap, Bot, Brain, Target, Workflow, ChevronRight, CheckCircle2, Shield, Zap as ZapIcon, LineChart, Globe, Mail, Phone, Calendar, Clock, Loader2 } from "lucide-react";
+import { Zap, Bot, Brain, Target, Workflow, ChevronRight, CheckCircle2, Shield, Zap as ZapIcon, LineChart, Globe, Mail, Phone, Calendar, Clock, Loader2, Building } from "lucide-react";
 
 interface LandingPageProps {
   onNavigateToAuth: (mode: "login" | "signup") => void;
@@ -151,6 +151,39 @@ export default function LandingPage({ onNavigateToAuth }: LandingPageProps) {
                 <div className="h-48 bg-surface rounded-xl border border-border/30" />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Ecosystem / Local Apps */}
+      <section className="py-12 px-6 md:px-12 bg-background relative z-10 border-t border-border/40">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-4xl font-bold mb-4">Development <span className="gradient-text">App Suite</span></h2>
+            <p className="text-muted-foreground text-sm max-w-2xl mx-auto">Access the different modules of the OperAIly platform running locally.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            <a href="http://localhost:3000" target="_blank" rel="noopener noreferrer" className="glass-card p-6 border border-border/50 hover:border-primary/50 transition-all group flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Globe className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Web Dashboard</h3>
+              <p className="text-muted-foreground text-xs">The main command center (Port 3000)</p>
+            </a>
+            <a href="http://localhost:8081" target="_blank" rel="noopener noreferrer" className="glass-card p-6 border border-border/50 hover:border-accent/50 transition-all group flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Target className="w-6 h-6 text-accent" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Field Agent App</h3>
+              <p className="text-muted-foreground text-xs">Mobile field sales interface (Port 8081)</p>
+            </a>
+            <a href="http://localhost:8082" target="_blank" rel="noopener noreferrer" className="glass-card p-6 border border-border/50 hover:border-success/50 transition-all group flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Building className="w-6 h-6 text-success" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Native CRM</h3>
+              <p className="text-muted-foreground text-xs">Full mobile CRM experience (Port 8082)</p>
+            </a>
           </div>
         </div>
       </section>

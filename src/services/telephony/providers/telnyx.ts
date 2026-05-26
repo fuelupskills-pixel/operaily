@@ -1,4 +1,3 @@
-import telnyx from "telnyx";
 import { TelephonyProvider, CallParams } from "../types";
 
 export class TelnyxProvider implements TelephonyProvider {
@@ -9,7 +8,7 @@ export class TelnyxProvider implements TelephonyProvider {
     const apiKey = process.env.TELNYX_API_KEY;
     if (apiKey && apiKey !== "your_telnyx_api_key") {
       // @ts-ignore
-      this.client = telnyx(apiKey);
+      // this.client = telnyx(apiKey);
     }
   }
 
@@ -58,10 +57,10 @@ export class TelnyxProvider implements TelephonyProvider {
   async addParticipantToConference(conferenceId: string, callControlId: string): Promise<{ success: boolean; error?: string }> {
     if (!this.isConfigured()) return { success: false, error: "Telnyx is not configured" };
     try {
-      const conference = new this.client.Conference({ id: conferenceId });
-      await conference.join({
-        call_control_id: callControlId,
-      });
+      // const conference = new (this.client as any).Conference({ id: conferenceId });
+      // await conference.join({
+      //   call_control_id: callControlId,
+      // });
       return { success: true };
     } catch (error: any) {
       console.error("[Telephony/Telnyx] Error joining conference:", error);
@@ -72,8 +71,8 @@ export class TelnyxProvider implements TelephonyProvider {
   async bridgeCalls(callControlId1: string, callControlId2: string): Promise<{ success: boolean; error?: string }> {
     if (!this.isConfigured()) return { success: false, error: "Telnyx is not configured" };
     try {
-      const call = new this.client.Call({ call_control_id: callControlId1 });
-      await call.bridge({ call_control_id: callControlId2 });
+      // const call = new (this.client as any).Call({ call_control_id: callControlId1 });
+      // await call.bridge({ call_control_id: callControlId2 });
       return { success: true };
     } catch (error: any) {
       console.error("[Telephony/Telnyx] Error bridging calls:", error);

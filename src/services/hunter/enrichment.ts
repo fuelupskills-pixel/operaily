@@ -120,9 +120,15 @@ Return ONLY a valid JSON array matching input order.`;
       if (lead.website) score += 3;
       if (lead.companyName) score += 3;
 
-      // Source reliability
-      if (lead.source === "apollo") score += 3;
-      else if (lead.source === "linkedin") score += 2;
+      // Source reliability + intent scoring
+      if (lead.source === "government_tender") score += 35;       // Gov tenders = highest intent
+      else if (lead.source === "import_database") score += 20;    // Already importing = proven buyer
+      else if (lead.source === "trade_portal") score += 15;       // Active RFQ = high intent
+      else if (lead.source === "pharma_directory") score += 10;   // Verified industry listing
+      else if (lead.source === "apollo") score += 5;
+      else if (lead.source === "linkedin") score += 4;
+      else if (lead.source === "indiamart") score += 8;
+      else if (lead.source === "tradeindia") score += 8;
 
       // Cap at 100
       score = Math.min(100, score);

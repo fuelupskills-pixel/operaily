@@ -25,15 +25,56 @@ export class DeepSearchProvider {
     ];
 
     const allResults: SearchResult[] = [];
-    for (const query of queries) {
+    
+    // Attempt real Firecrawl Web Search / Scrape if key is present
+    if (params.apiKeys?.firecrawlKey) {
+      console.log("[Hunter/DeepSearch] Using Firecrawl API for deep web scraping...");
       try {
-        const results = await this.searchDuckDuckGo(query);
-        allResults.push(...results);
+        // Firecrawl typically uses a search endpoint or scrape endpoint. 
+        // We will simulate a call to Firecrawl's /search or /crawl endpoint here.
+        // Assuming Firecrawl SDK or direct fetch:
+        const res = await fetch("https://api.firecrawl.dev/v1/search", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${params.apiKeys.firecrawlKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            query: `${params.industry} companies in ${params.country}`,
+            limit: 10,
+            pageOptions: { fetchPageContent: false }
+          })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.data && Array.isArray(data.data)) {
+            data.data.forEach((item: any) => {
+              allResults.push({
+                title: item.title || "",
+                url: item.url || "",
+                snippet: item.description || ""
+              });
+            });
+          }
+        }
       } catch (err) {
-        console.error(`[Hunter/DeepSearch] Search failed for query: ${query}`, err);
+        console.error("[Hunter/DeepSearch] Firecrawl API failed, falling back to DuckDuckGo:", err);
       }
-      // Small delay between queries
-      await new Promise(r => setTimeout(r, 300));
+    }
+    
+    // Fallback to DuckDuckGo if Firecrawl failed or was not provided
+    if (allResults.length === 0) {
+      for (const query of queries) {
+        try {
+          const results = await this.searchDuckDuckGo(query);
+          allResults.push(...results);
+        } catch (err) {
+          console.error(`[Hunter/DeepSearch] Search failed for query: ${query}`, err);
+        }
+        // Small delay between queries
+        await new Promise(r => setTimeout(r, 300));
+      }
     }
 
     if (allResults.length === 0) {

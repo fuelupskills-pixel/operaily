@@ -27,7 +27,70 @@ export class LinkedInProvider {
   }
 
   private async scrapeDuckDuckGo(params: ProviderSearchParams): Promise<RawLead[]> {
-    const query = `site:linkedin.com/in/ "${params.industry}" "${params.country}"`;
+    const sources = params.sources || ["linkedin"];
+    const siteQueries = sources.filter(s => ["linkedin", "facebook", "twitter", "instagram"].includes(s))
+                               .map(s => `site:${s}.com`);
+    const siteFilter = siteQueries.length > 0 ? siteQueries.join(" OR ") : "site:linkedin.com/in/";
+    
+    // Check for Serper API Key
+    if (params.apiKeys?.serperKey) {
+      console.log(`[Hunter/Social] Using Serper API for social search: ${siteFilter}`);
+      try {
+        const res = await fetch("https://google.serper.dev/search", {
+          method: "POST",
+          headers: {
+            "X-API-KEY": params.apiKeys.serperKey,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ q: `${siteFilter} "${params.industry}" "${params.country}"`, num: 10 })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          const leads: RawLead[] = [];
+          if (data.organic && data.organic.length > 0) {
+            for (const result of data.organic) {
+              const profileUrl = result.link || "";
+              let source = "linkedin";
+              if (profileUrl.includes("facebook.com")) source = "facebook";
+              if (profileUrl.includes("twitter.com") || profileUrl.includes("x.com")) source = "twitter";
+              if (profileUrl.includes("instagram.com")) source = "instagram";
+              
+              const title = result.title || "Contact Profile";
+              const parts = title.split(/\s*[-|]\s*/);
+              const nameTokens = (parts[0] || "Contact").split(" ");
+              
+              leads.push({
+                firstName: nameTokens[0] || "Contact",
+                lastName: nameTokens.slice(1).join(" ") || "Profile",
+                email: null,
+                phone: null,
+                whatsapp: null,
+                designation: parts.length > 1 ? parts[1].trim() : "Professional",
+                companyName: params.industry + " Company",
+                website: null,
+                address: null,
+                city: params.country,
+                country: params.country,
+                industry: params.industry,
+                linkedinUrl: source === "linkedin" ? profileUrl : null,
+                twitterHandle: source === "twitter" ? profileUrl : null,
+                facebookUrl: source === "facebook" ? profileUrl : null,
+                source: source as any,
+                sourceId: `serper_social_${Date.now()}_${leads.length}`,
+                rawData: { scrapedTitle: title, url: profileUrl, snippet: result.snippet },
+              });
+            }
+            if (leads.length > 0) return leads;
+          }
+        }
+      } catch (err) {
+        console.error("[Hunter/Social] Serper API failed:", err);
+      }
+    }
+
+    // Fallback to DuckDuckGo HTML scraping
+    const query = `${siteFilter} "${params.industry}" "${params.country}"`;
     const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     const encodedQuery = encodeURIComponent(query);
     const url = `https://html.duckduckgo.com/html/?q=${encodedQuery}`;
@@ -56,16 +119,20 @@ export class LinkedInProvider {
       const urlMatch = rawUrl.match(/uddg=([^&]*)/);
       const profileUrl = urlMatch ? decodeURIComponent(urlMatch[1]) : rawUrl;
       
-      if (!profileUrl.includes("linkedin.com/in/")) continue;
+      let source = "linkedin";
+      if (profileUrl.includes("facebook.com")) source = "facebook";
+      if (profileUrl.includes("twitter.com") || profileUrl.includes("x.com")) source = "twitter";
+      if (profileUrl.includes("instagram.com")) source = "instagram";
       
-      // Typical format: "First Last - Designation - Company | LinkedIn"
+      if (!profileUrl.includes("linkedin.com") && !profileUrl.includes("facebook.com") && !profileUrl.includes("twitter.com") && !profileUrl.includes("instagram.com") && !profileUrl.includes("x.com")) continue;
+      
       const parts = fullTitle.split(/\s*[-|]\s*/);
       const namePart = parts[0] || "Unknown";
       const nameTokens = namePart.split(" ");
       const firstName = nameTokens[0] || "Contact";
       const lastName = nameTokens.slice(1).join(" ") || "Profile";
       
-      const designation = parts.length > 1 && !parts[1].includes("LinkedIn") ? parts[1].trim() : "Professional";
+      const designation = parts.length > 1 && !parts[1].includes("LinkedIn") && !parts[1].includes("Facebook") ? parts[1].trim() : "Professional";
       const companyName = parts.length > 2 && !parts[2].includes("LinkedIn") ? parts[2].trim() : params.industry + " Company";
 
       leads.push({
@@ -81,11 +148,11 @@ export class LinkedInProvider {
         city: params.country,
         country: params.country,
         industry: params.industry,
-        linkedinUrl: profileUrl,
-        twitterHandle: null,
-        facebookUrl: null,
-        source: "linkedin",
-        sourceId: `li_scrape_${Date.now()}_${leads.length}`,
+        linkedinUrl: source === "linkedin" ? profileUrl : null,
+        twitterHandle: source === "twitter" ? profileUrl : null,
+        facebookUrl: source === "facebook" ? profileUrl : null,
+        source: source as any,
+        sourceId: `scrape_social_${Date.now()}_${leads.length}`,
         rawData: { scrapedTitle: fullTitle, url: profileUrl },
       });
     }
