@@ -1,8 +1,24 @@
-// OMNI-SIGMA 360 — Hunter Service v2
-// Global Lead Intelligence Agent
-// Orchestrates B2B lead extraction across 7+ data sources including:
-// Apollo, LinkedIn, Web Crawling, B2B Directories, Government Tenders,
-// Trade Portals (Alibaba, EC21, ExportHub), Import/Export Databases, Pharma Directories
+// OMNI-SIGMA 360 — Hunter Service v3
+// Global Lead Intelligence Agent — 15 Data Source Platforms
+//
+// Platforms covered:
+//  1. Apollo.io           — B2B contact database
+//  2. LinkedIn            — Professional network
+//  3. Facebook/Instagram  — Social business profiles
+//  4. Twitter/X           — Social signals
+//  5. Trade Portals       — Alibaba RFQ, EC21, ExportHub, Thomasnet, Global Sources
+//  6. Government Tenders  — SAM.gov, TED Europa, UNGM, GeM India, World Bank, AfDB
+//  7. Pharma Directories  — Pharmacompass, CPhI, MedicalExpo, LabX, Kompass
+//  8. Import/Export DB    — ImportYeti, Panjiva, Volza (by HS code)
+//  9. B2B Directories     — IndiaMART, JustDial, TradeIndia, Alibaba
+// 10. Web Crawling        — Yellow Pages, company websites, directories
+// 11. Deep Search         — Serper-powered Google crawl for real buyers
+// 12. Yellow Pages        — Country-specific YP portals worldwide
+// 13. Google Maps         — Google My Business / local business listings
+// 14. Industry Forums     — Reddit, pharma forums, LinkedIn groups, Quora
+// 15. Europages/Kompass   — EU business directories, D&B, GlobalSpec
+// 16. Social Media        — Instagram Business, WhatsApp Business, TikTok, Telegram
+// 17. Chamber of Commerce — ICC, US Chamber, CII India, DIHK Germany, Arab chambers
 
 import { ApolloProvider } from "./providers/apollo";
 import { LinkedInProvider } from "./providers/linkedin";
@@ -13,172 +29,155 @@ import { GovernmentTendersProvider } from "./providers/government-tenders";
 import { TradePortalsProvider } from "./providers/trade-portals";
 import { ImportExportDatabaseProvider } from "./providers/import-export-db";
 import { PharmaDirectoriesProvider } from "./providers/pharma-directories";
+import { YellowPagesProvider } from "./providers/yellow-pages";
+import { GoogleMapsProvider } from "./providers/google-maps";
+import { IndustryForumsProvider } from "./providers/industry-forums";
+import { EuropagesKompassProvider } from "./providers/europages-kompass";
+import { SocialMediaProvider } from "./providers/social-media";
+import { ChamberOfCommerceProvider } from "./providers/chamber-of-commerce";
 import { EnrichmentService } from "./enrichment";
 import { deduplicateLeads } from "./dedup";
 import type { RawLead, EnrichedLead, HunterSearchParams, HunterSearchProgress } from "./types";
 
-export class HunterService {
-  private apollo: ApolloProvider;
-  private linkedin: LinkedInProvider;
-  private webScraper: WebScraperProvider;
-  private b2bDirectories: B2BDirectoriesProvider;
-  private deepSearch: DeepSearchProvider;
-  private governmentTenders: GovernmentTendersProvider;
-  private tradePortals: TradePortalsProvider;
-  private importExportDb: ImportExportDatabaseProvider;
-  private pharmaDirectories: PharmaDirectoriesProvider;
-  private enrichment: EnrichmentService;
+// Source → score bonus mapping
+const SOURCE_SCORE_BONUS: Record<string, number> = {
+  government_tender:    40,  // Highest: real procurement budget
+  import_database:      25,  // Proven buyer (already importing)
+  trade_portal:         20,  // Active RFQ/inquiry
+  chamber_of_commerce:  18,  // Vetted chamber member
+  pharma_directory:     15,  // Verified industry listing
+  europages_kompass:    12,  // EU business directory
+  yellow_pages:         10,  // Local business listing
+  google_maps:          10,  // Google verified business
+  indiamart:            12,
+  tradeindia:           12,
+  industry_forum:        8,  // Community mention
+  social_media:          8,  // Social presence
+  apollo:                6,
+  linkedin:              5,
+  web_scraper:           3,
+  deep_search:           4,
+};
 
-  constructor() {
-    this.apollo = new ApolloProvider();
-    this.linkedin = new LinkedInProvider();
-    this.webScraper = new WebScraperProvider();
-    this.b2bDirectories = new B2BDirectoriesProvider();
-    this.deepSearch = new DeepSearchProvider();
-    this.governmentTenders = new GovernmentTendersProvider();
-    this.tradePortals = new TradePortalsProvider();
-    this.importExportDb = new ImportExportDatabaseProvider();
-    this.pharmaDirectories = new PharmaDirectoriesProvider();
-    this.enrichment = new EnrichmentService();
-  }
+export class HunterService {
+  private apollo            = new ApolloProvider();
+  private linkedin          = new LinkedInProvider();
+  private webScraper        = new WebScraperProvider();
+  private b2bDirs           = new B2BDirectoriesProvider();
+  private deepSearch        = new DeepSearchProvider();
+  private govTenders        = new GovernmentTendersProvider();
+  private tradePortals      = new TradePortalsProvider();
+  private importExportDb    = new ImportExportDatabaseProvider();
+  private pharmaDirectories = new PharmaDirectoriesProvider();
+  private yellowPages       = new YellowPagesProvider();
+  private googleMaps        = new GoogleMapsProvider();
+  private industryForums    = new IndustryForumsProvider();
+  private europagesKompass  = new EuropagesKompassProvider();
+  private socialMedia       = new SocialMediaProvider();
+  private chamberOfCommerce = new ChamberOfCommerceProvider();
+  private enrichment        = new EnrichmentService();
 
   async search(
     params: HunterSearchParams,
     onProgress?: (progress: HunterSearchProgress) => void
   ): Promise<EnrichedLead[]> {
-    const { industry, country, titles, limit = 50 } = params;
+    const { industry, country, titles, limit = 60 } = params;
     const isDeepSearch = params.deepSearch === true;
-    const sources = params.sources || ["apollo", "linkedin", "web"];
+    const sources = params.sources || [
+      "apollo", "linkedin", "web", "trade_portals", "government",
+      "pharma_dir", "import_export", "yellow_pages", "google_maps",
+      "forums", "europages", "social", "chamber",
+    ];
     const apiKeys = params.apiKeys || {};
-
-    const providerParams = { industry, country, titles, limit, sources, apiKeys };
-
-    // ─── Phase 1: Parallel Source Collection ────────────────────────────────────
+    const pp = { industry, country, titles, limit: Math.ceil(limit / 8), sources, apiKeys };
 
     const allRaw: RawLead[] = [];
+    let pct = 5;
 
-    // Apollo
-    if (sources.includes("apollo")) {
+    // ── Helper to run one provider safely ──────────────────────────────────
+    const run = async (
+      id: string,
+      label: string,
+      source: HunterSearchProgress["source"],
+      fn: () => Promise<RawLead[]>
+    ) => {
+      if (!sources.includes(id) && !isDeepSearch) return;
       try {
-        onProgress?.({ phase: "searching", source: "apollo", message: "🎯 Querying Apollo.io database...", percent: 8 });
-        const apolloResults = await this.apollo.search(providerParams);
-        allRaw.push(...apolloResults);
-        onProgress?.({ phase: "searching", source: "apollo", message: `✅ Apollo: ${apolloResults.length} contacts found`, percent: 14 });
-      } catch (e) { console.warn("[Hunter] Apollo provider failed:", e); }
-    }
+        onProgress?.({ phase: "searching", source, message: `🔍 ${label}...`, percent: pct });
+        const results = await fn();
+        allRaw.push(...results);
+        pct = Math.min(pct + 5, 80);
+        onProgress?.({ phase: "searching", source, message: `✅ ${label}: ${results.length} leads`, percent: pct });
+      } catch (e) {
+        console.warn(`[Hunter] ${id} failed:`, e);
+      }
+    };
 
-    // LinkedIn / Social
-    if (sources.includes("linkedin") || sources.includes("facebook") || sources.includes("twitter")) {
-      try {
-        onProgress?.({ phase: "searching", source: "linkedin", message: "💼 Scanning LinkedIn & social networks...", percent: 18 });
-        const linkedinResults = await this.linkedin.search(providerParams);
-        allRaw.push(...linkedinResults);
-        onProgress?.({ phase: "searching", source: "linkedin", message: `✅ Social: ${linkedinResults.length} profiles found`, percent: 24 });
-      } catch (e) { console.warn("[Hunter] Social provider failed:", e); }
-    }
+    // ── Phase 1: All Providers (parallel groups for speed) ─────────────────
 
-    // Trade Portals (Alibaba, EC21, ExportHub, Thomasnet)
-    if (sources.includes("trade_portals") || sources.includes("alibaba") || sources.includes("web")) {
-      try {
-        onProgress?.({ phase: "searching", source: "trade", message: "🏪 Mining trade portals: Alibaba, EC21, ExportHub...", percent: 28 });
-        const tradeResults = await this.tradePortals.search(providerParams);
-        allRaw.push(...tradeResults);
-        onProgress?.({ phase: "searching", source: "trade", message: `✅ Trade Portals: ${tradeResults.length} RFQs/buyers found`, percent: 35 });
-      } catch (e) { console.warn("[Hunter] Trade portals provider failed:", e); }
-    }
+    // Group A — Core data platforms
+    await Promise.all([
+      run("apollo",        "Apollo.io database",             "apollo",       () => this.apollo.search(pp)),
+      run("linkedin",      "LinkedIn & social networks",      "linkedin",     () => this.linkedin.search(pp)),
+      run("social",        "Instagram / WhatsApp / TikTok / Telegram", "linkedin", () => this.socialMedia.search(pp)),
+    ]);
 
-    // Government Tenders
-    if (sources.includes("government") || sources.includes("tenders") || isDeepSearch) {
-      try {
-        onProgress?.({ phase: "searching", source: "government", message: "🏛️ Searching government procurement portals...", percent: 38 });
-        const tenderResults = await this.governmentTenders.search(providerParams);
-        allRaw.push(...tenderResults);
-        onProgress?.({ phase: "searching", source: "government", message: `✅ Gov Tenders: ${tenderResults.length} procurement leads`, percent: 44 });
-      } catch (e) { console.warn("[Hunter] Gov Tenders provider failed:", e); }
-    }
+    // Group B — Trade & commerce
+    await Promise.all([
+      run("trade_portals", "Trade portals (Alibaba, EC21, ExportHub)", "trade", () => this.tradePortals.search(pp)),
+      run("indiamart",     "IndiaMART / JustDial / TradeIndia",        "b2b",   () => this.b2bDirs.search(pp)),
+      run("europages",     "Europages / Kompass / D&B",                "trade", () => this.europagesKompass.search(pp)),
+    ]);
 
-    // Pharma & Medical Directories
-    if (sources.includes("pharma_dir") || sources.includes("directories") || isDeepSearch) {
-      try {
-        onProgress?.({ phase: "searching", source: "pharma_dir", message: "💊 Scanning pharma & medical directories...", percent: 48 });
-        const dirResults = await this.pharmaDirectories.search(providerParams);
-        allRaw.push(...dirResults);
-        onProgress?.({ phase: "searching", source: "pharma_dir", message: `✅ Directories: ${dirResults.length} companies found`, percent: 53 });
-      } catch (e) { console.warn("[Hunter] Pharma directories provider failed:", e); }
-    }
+    // Group C — Government & official
+    await Promise.all([
+      run("government",    "Government procurement portals",   "government",    () => this.govTenders.search(pp)),
+      run("chamber",       "Chamber of Commerce directories",  "system",        () => this.chamberOfCommerce.search(pp)),
+      run("import_export", "Import/Export databases (HS codes)","import_export",() => this.importExportDb.search(pp)),
+    ]);
 
-    // Import/Export Databases
-    if (sources.includes("import_export") || sources.includes("volza") || isDeepSearch) {
-      try {
-        onProgress?.({ phase: "searching", source: "import_export", message: "📦 Analyzing import/export databases (HS codes)...", percent: 56 });
-        const importResults = await this.importExportDb.search(providerParams);
-        allRaw.push(...importResults);
-        onProgress?.({ phase: "searching", source: "import_export", message: `✅ Import DB: ${importResults.length} importers identified`, percent: 61 });
-      } catch (e) { console.warn("[Hunter] Import/Export DB provider failed:", e); }
-    }
+    // Group D — Industry directories
+    await Promise.all([
+      run("pharma_dir",    "Pharma & medical directories",  "pharma_dir",    () => this.pharmaDirectories.search(pp)),
+      run("yellow_pages",  "Yellow Pages worldwide",         "system",        () => this.yellowPages.search(pp)),
+      run("google_maps",   "Google Maps / My Business",      "system",        () => this.googleMaps.search(pp)),
+    ]);
 
-    // B2B Directories (IndiaMART, JustDial, etc.)
-    if (sources.includes("indiamart") || sources.includes("justdial")) {
-      try {
-        onProgress?.({ phase: "searching", source: "b2b", message: "📋 Extracting from IndiaMART, JustDial, TradeIndia...", percent: 63 });
-        const b2bResults = await this.b2bDirectories.search(providerParams);
-        allRaw.push(...b2bResults);
-        onProgress?.({ phase: "searching", source: "b2b", message: `✅ B2B Dirs: ${b2bResults.length} listings found`, percent: 67 });
-      } catch (e) { console.warn("[Hunter] B2B Directories failed:", e); }
-    }
+    // Group E — Community & web
+    await Promise.all([
+      run("forums",        "Industry forums & communities (Reddit, pharma networks)", "system", () => this.industryForums.search(pp)),
+      run("web",           "Web crawling & directories",    "web",           () => this.webScraper.search(pp)),
+    ]);
 
-    // Web Crawling
-    if (sources.includes("web")) {
-      try {
-        onProgress?.({ phase: "searching", source: "web", message: "🌐 Crawling web directories & Yellow Pages...", percent: 69 });
-        const webResults = await this.webScraper.search(providerParams);
-        allRaw.push(...webResults);
-        onProgress?.({ phase: "searching", source: "web", message: `✅ Web: ${webResults.length} entries scraped`, percent: 73 });
-      } catch (e) { console.warn("[Hunter] WebScraper failed:", e); }
-    }
-
-    // Deep Search (Serper-powered Google crawling)
+    // Deep Search — last
     if (isDeepSearch || sources.includes("deep")) {
-      try {
-        onProgress?.({ phase: "searching", source: "deep", message: "🕵️ Deep crawling internet for real buyers...", percent: 75 });
-        const deepResults = await this.deepSearch.search(providerParams);
-        allRaw.push(...deepResults);
-        onProgress?.({ phase: "searching", source: "deep", message: `✅ Deep search: ${deepResults.length} additional leads`, percent: 80 });
-      } catch (e) { console.warn("[Hunter] Deep search failed:", e); }
+      await run("deep", "Deep internet crawl for real buyers", "deep", () => this.deepSearch.search(pp));
     }
 
-    // ─── Phase 2: Deduplication ──────────────────────────────────────────────────
+    // ── Phase 2: Dedup ────────────────────────────────────────────────────
     onProgress?.({ phase: "deduplicating", source: "system", message: `🔄 Deduplicating ${allRaw.length} total records...`, percent: 83 });
     const unique = deduplicateLeads(allRaw);
     onProgress?.({ phase: "deduplicating", source: "system", message: `✅ ${unique.length} unique leads after dedup`, percent: 87 });
 
-    // ─── Phase 3: AI Enrichment & Scoring ───────────────────────────────────────
+    // ── Phase 3: AI Enrichment ────────────────────────────────────────────
     onProgress?.({ phase: "enriching", source: "ai", message: "🤖 AI scoring & enriching leads...", percent: 90 });
     const enriched = await this.enrichment.enrichBatch(unique, { industry, country });
 
-    // Apply source-based score bonuses
+    // Apply source bonuses
     const boosted = enriched.map(lead => {
-      let bonus = 0;
-      if ((lead as any).rawData?.type === "Government Procurement") bonus += 40;
-      else if ((lead as any).source === "government_tender") bonus += 40;
-      else if ((lead as any).source === "trade_portal") bonus += 20;
-      else if ((lead as any).source === "import_database") bonus += 25;
-      else if ((lead as any).source === "pharma_directory") bonus += 15;
+      const bonus = SOURCE_SCORE_BONUS[lead.source as string] || 0;
       lead.score = Math.min(100, lead.score + bonus);
       return lead;
     });
 
     onProgress?.({ phase: "complete", source: "system", message: `🎉 ${boosted.length} leads ready!`, percent: 100 });
-    return boosted.sort((a, b) => b.score - a.score);
+    return boosted.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 }
 
-// Singleton instance
-let hunterInstance: HunterService | null = null;
-
+// Singleton
+let instance: HunterService | null = null;
 export function getHunterService(): HunterService {
-  if (!hunterInstance) {
-    hunterInstance = new HunterService();
-  }
-  return hunterInstance;
+  if (!instance) instance = new HunterService();
+  return instance;
 }

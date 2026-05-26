@@ -277,3 +277,201 @@ export function getTemplatesForIndustry(industry: string, channel?: "whatsapp" |
 
   return filtered;
 }
+
+/**
+ * In-memory templates store that starts with the pre-seeded ones.
+ */
+let customTemplates: MessageTemplate[] = [...templates];
+
+export async function listTemplates(industry?: string, channel?: "whatsapp" | "email"): Promise<MessageTemplate[]> {
+  const isSupabaseConfigured = () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    return !!(url && url.startsWith("http") && key && !key.startsWith("your_"));
+  };
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      let query = sb.from("templates").select();
+      if (channel) {
+        query = query.eq("channel", channel);
+      }
+      const { data, error } = await query;
+      if (!error && data) {
+        return data.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          channel: t.channel,
+          industry: t.industry,
+          subject: t.subject || undefined,
+          body: t.body,
+          variables: t.variables || [],
+          calendarLink: t.calendar_link || t.calendarLink || CALENDAR_LINK,
+        }));
+      }
+    } catch (e) {
+      console.warn("[TemplatesService] Supabase list failed, using in-memory:", e);
+    }
+  }
+
+  // Fallback to in-memory
+  let list = customTemplates;
+  if (channel) {
+    list = list.filter((t) => t.channel === channel);
+  }
+  if (industry) {
+    const lower = industry.toLowerCase();
+    list = list.filter((t) => t.industry.toLowerCase().includes(lower) || lower.includes(t.industry.toLowerCase()));
+  }
+  return list;
+}
+
+export async function getTemplateById(id: string): Promise<MessageTemplate | null> {
+  const isSupabaseConfigured = () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    return !!(url && url.startsWith("http") && key && !key.startsWith("your_"));
+  };
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      const { data, error } = await sb.from("templates").select().eq("id", id).single();
+      if (!error && data) {
+        return {
+          id: data.id,
+          name: data.name,
+          channel: data.channel,
+          industry: data.industry,
+          subject: data.subject || undefined,
+          body: data.body,
+          variables: data.variables || [],
+          calendarLink: data.calendar_link || data.calendarLink || CALENDAR_LINK,
+        };
+      }
+    } catch (e) {
+      console.warn("[TemplatesService] Supabase get failed, using in-memory:", e);
+    }
+  }
+
+  return customTemplates.find((t) => t.id === id) || null;
+}
+
+export async function createTemplate(templateData: Omit<MessageTemplate, "id">): Promise<MessageTemplate> {
+  const id = `tpl_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  const newTpl: MessageTemplate = {
+    ...templateData,
+    id,
+    calendarLink: templateData.calendarLink || CALENDAR_LINK,
+  };
+
+  const isSupabaseConfigured = () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    return !!(url && url.startsWith("http") && key && !key.startsWith("your_"));
+  };
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      const { error } = await sb.from("templates").insert({
+        id,
+        name: newTpl.name,
+        channel: newTpl.channel,
+        industry: newTpl.industry,
+        subject: newTpl.subject || null,
+        body: newTpl.body,
+        variables: newTpl.variables,
+        calendar_link: newTpl.calendarLink,
+      });
+      if (!error) {
+        console.log("[TemplatesService] Created template in Supabase:", id);
+      } else {
+        console.warn("[TemplatesService] Supabase insert failed:", error.message);
+      }
+    } catch (e) {
+      console.warn("[TemplatesService] Supabase create failed, using in-memory:", e);
+    }
+  }
+
+  customTemplates.push(newTpl);
+  return newTpl;
+}
+
+export async function updateTemplate(id: string, updates: Partial<MessageTemplate>): Promise<MessageTemplate | null> {
+  const isSupabaseConfigured = () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    return !!(url && url.startsWith("http") && key && !key.startsWith("your_"));
+  };
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      const { error } = await sb.from("templates").update({
+        name: updates.name,
+        channel: updates.channel,
+        industry: updates.industry,
+        subject: updates.subject || null,
+        body: updates.body,
+        variables: updates.variables,
+        calendar_link: updates.calendarLink,
+      }).eq("id", id);
+      if (!error) {
+        console.log("[TemplatesService] Updated template in Supabase:", id);
+      } else {
+        console.warn("[TemplatesService] Supabase update failed:", error.message);
+      }
+    } catch (e) {
+      console.warn("[TemplatesService] Supabase update failed, using in-memory:", e);
+    }
+  }
+
+  const idx = customTemplates.findIndex((t) => t.id === id);
+  if (idx !== -1) {
+    customTemplates[idx] = {
+      ...customTemplates[idx],
+      ...updates,
+      id, // Preserve ID
+    };
+    return customTemplates[idx];
+  }
+
+  return null;
+}
+
+export async function deleteTemplate(id: string): Promise<boolean> {
+  const isSupabaseConfigured = () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    return !!(url && url.startsWith("http") && key && !key.startsWith("your_"));
+  };
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      const { error } = await sb.from("templates").delete().eq("id", id);
+      if (!error) {
+        console.log("[TemplatesService] Deleted template in Supabase:", id);
+      } else {
+        console.warn("[TemplatesService] Supabase delete failed:", error.message);
+      }
+    } catch (e) {
+      console.warn("[TemplatesService] Supabase delete failed, using in-memory:", e);
+    }
+  }
+
+  const idx = customTemplates.findIndex((t) => t.id === id);
+  if (idx !== -1) {
+    customTemplates.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+

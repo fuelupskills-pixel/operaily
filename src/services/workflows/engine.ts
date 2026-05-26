@@ -3,7 +3,7 @@
 
 import type {
   WorkflowDefinition, WorkflowNodeDef, WorkflowEdgeDef,
-  WorkflowExecution, ExecutionLog, ExecutionStatus,
+  WorkflowExecution, ExecutionLog, ExecutionStatus, NodeType,
 } from "./types";
 import { executeNode } from "./node-executor";
 import { createServerClient } from "@/lib/supabase/server";
@@ -487,7 +487,7 @@ export class WorkflowEngine {
           id: l.id,
           nodeId: l.node_id,
           nodeLabel: l.action,
-          nodeType: "",
+          nodeType: (l.node_type || "trigger") as NodeType,
           action: l.action,
           status: l.status,
           input: l.input_data,

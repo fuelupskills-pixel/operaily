@@ -8,7 +8,7 @@ import { getWorkflowEngine } from "@/services/workflows/engine";
 export async function GET() {
   try {
     const engine = getWorkflowEngine();
-    const workflows = engine.listWorkflows();
+    const workflows = await engine.listWorkflows();
     return NextResponse.json({ success: true, workflows });
   } catch (error) {
     console.error("[API/Workflows] List error:", error);
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const engine = getWorkflowEngine();
-    const workflow = engine.saveWorkflow(body);
+    const workflow = await engine.saveWorkflow(body);
     return NextResponse.json({ success: true, workflow }, { status: 201 });
   } catch (error) {
     console.error("[API/Workflows] Save error:", error);

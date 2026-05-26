@@ -7,7 +7,7 @@ const Stack = createNativeStackNavigator();
 
 export function LeadsStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator id="LeadsStack" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="LeadsList" component={LeadsScreen} />
       <Stack.Screen name="LeadDetail" component={LeadDetailScreen} />
     </Stack.Navigator>

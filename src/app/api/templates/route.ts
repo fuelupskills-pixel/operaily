@@ -1,9 +1,5 @@
-// OMNI-SIGMA 360 — Templates API
-// GET /api/templates?industry=pharmaceutical&channel=whatsapp
-// POST /api/templates/send — Send a templated message to a lead
-
 import { NextRequest, NextResponse } from "next/server";
-import { getTemplatesForIndustry, interpolateTemplate, templates } from "@/services/templates";
+import { getTemplatesForIndustry, interpolateTemplate, templates, listTemplates, createTemplate } from "@/services/templates";
 import { getChannelService } from "@/services/channels";
 
 export async function GET(request: NextRequest) {
@@ -11,17 +7,27 @@ export async function GET(request: NextRequest) {
   const industry = searchParams.get("industry") || "";
   const channel = searchParams.get("channel") as "whatsapp" | "email" | undefined;
 
-  const filtered = industry
-    ? getTemplatesForIndustry(industry, channel || undefined)
-    : templates.filter((t) => !channel || t.channel === channel);
-
-  return NextResponse.json({ success: true, templates: filtered });
+  const list = await listTemplates(industry || undefined, channel || undefined);
+  return NextResponse.json({ success: true, templates: list });
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    
+    // Check if it's a template creation request
+    if (body.name && body.body && !body.lead) {
+      const { name, channel, industry, subject, body: tplBody, variables = [], calendarLink } = body;
+      if (!name || !channel || !industry || !tplBody) {
+        return NextResponse.json({ error: "Missing required fields for creation: name, channel, industry, body" }, { status: 400 });
+      }
+      const created = await createTemplate({ name, channel, industry, subject, body: tplBody, variables, calendarLink });
+      return NextResponse.json({ success: true, template: created }, { status: 201 });
+    }
+
+    // Otherwise, treat as "send templated message"
     const { templateId, lead, customBody } = body;
+
 
     const template = templates.find((t) => t.id === templateId);
     if (!template) {

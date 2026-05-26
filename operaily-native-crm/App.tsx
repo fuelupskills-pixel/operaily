@@ -26,7 +26,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator id="RootStack" screenOptions={{ headerShown: false }}>
           {session && session.user ? (
             <Stack.Screen name="MainTabs" component={TabNavigator} />
           ) : (
