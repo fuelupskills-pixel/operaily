@@ -46,31 +46,27 @@ const midTitles = [
 ];
 
 export class ApolloProvider {
-  private isConfigured: boolean;
-
-  constructor() {
-    this.isConfigured = !!APOLLO_API_KEY;
-  }
-
   async search(params: ProviderSearchParams): Promise<RawLead[]> {
-    if (!this.isConfigured) {
-      throw new Error("[Hunter/Apollo] APOLLO_API_KEY is not configured.");
+    const apiKey = params.apiKeys?.apolloKey || process.env.APOLLO_API_KEY;
+    if (!apiKey || apiKey === "your_apollo_api_key") {
+      console.log("[Hunter/Apollo] Apollo API key not configured, using dynamic mock generation.");
+      return this.generateDynamicLeads(params, params.limit || 25);
     }
     try {
-      return await this.searchReal(params);
+      return await this.searchReal(params, apiKey);
     } catch (error: any) {
       console.warn(`[Hunter/Apollo] API search failed (likely Free Plan limit). Falling back to dynamic mock generation. Error: ${error.message}`);
       return this.generateDynamicLeads(params, params.limit || 25);
     }
   }
 
-  private async searchReal(params: ProviderSearchParams): Promise<RawLead[]> {
+  private async searchReal(params: ProviderSearchParams, apiKey: string): Promise<RawLead[]> {
     const response = await fetch(`${APOLLO_BASE_URL}/mixed_people/search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
-        "X-Api-Key": APOLLO_API_KEY!,
+        "X-Api-Key": apiKey,
       },
       body: JSON.stringify({
         q_organization_keyword_tags: [params.industry],

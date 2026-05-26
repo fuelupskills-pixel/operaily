@@ -88,7 +88,11 @@ export class HunterService {
       "pharma_dir", "import_export", "yellow_pages", "google_maps",
       "forums", "europages", "social", "chamber",
     ];
-    const apiKeys = params.apiKeys || {};
+    const apiKeys = {
+      serperKey: process.env.SERPER_API_KEY || "",
+      apolloKey: process.env.APOLLO_API_KEY || "",
+      ...(params.apiKeys || {})
+    };
     const pp = { industry, country, titles, limit: Math.ceil(limit / 8), sources, apiKeys };
 
     const allRaw: RawLead[] = [];

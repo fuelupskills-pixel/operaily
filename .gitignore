@@ -49,3 +49,4 @@ next-env.d.ts
 chrome_err.log
 chrome_out.log
 chrome_version*.txt
+.env*
